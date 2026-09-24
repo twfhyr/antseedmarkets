@@ -16,11 +16,14 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <I18nProvider>
       <WagmiProvider config={config}>
         <QueryClientProvider client={queryClient}>
-          <RainbowKitProvider theme={darkTheme({
-            accentColor: '#10b981',
-            accentColorForeground: 'white',
-            borderRadius: 'medium',
-          })}>
+          <RainbowKitProvider
+            locale="en-US"
+            theme={darkTheme({
+              accentColor: '#10b981',
+              accentColorForeground: 'white',
+              borderRadius: 'medium',
+            })}
+          >
             <App />
           </RainbowKitProvider>
         </QueryClientProvider>
