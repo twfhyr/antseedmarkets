@@ -151,26 +151,48 @@ function Rewards() {
     setSearchLoading(false);
   };
 
+  // Shows every epoch with real recorded activity (points or a historical
+  // payout), not just still-actionable ones -- a claimed/staked epoch stays
+  // visible with its real earned amount (see backend/server.js's
+  // loadBuyerUsageRewards/loadSellerUsageRewards, which stopped zeroing
+  // `amount` on a claimed row 2026-09-24) so a wallet's full earnings
+  // history since epoch 22 is visible, not just its currently-pending rows.
   const buyerRows = useMemo(
-    () => (rewards?.buyerUsage?.epochs || []).filter((e) => e.amount > 0 && !e.claimed).sort((a, b) => b.epoch - a.epoch),
+    () => (rewards?.buyerUsage?.epochs || []).filter((e) => e.points > 0 || e.amount > 0).sort((a, b) => b.epoch - a.epoch),
     [rewards]
   );
   const sellerRows = useMemo(
-    () => (rewards?.sellerUsage?.epochs || []).filter((e) => e.amount > 0 && !e.claimed).sort((a, b) => b.epoch - a.epoch),
+    () => (rewards?.sellerUsage?.epochs || []).filter((e) => e.points > 0 || e.amount > 0).sort((a, b) => b.epoch - a.epoch),
     [rewards]
   );
 
   // account/chainId passed explicitly rather than left implicit -- wagmi
-  // can otherwise resolve either from stale/ambiguous connector state
-  // (multi-account wallets, a connector that hasn't finished syncing its
-  // active chain), which is one real way a well-formed contract call ends
-  // up sent to the wallet with something wrong, surfacing as MetaMask's
-  // generic "Invalid parameters were provided to the RPC method" rather
-  // than a specific wagmi/viem error.
+  // can otherwise resolve either from stale/ambiguous connector state.
+  //
+  // Real bug found 2026-09-24: this used to await
+  // publicClient.waitForTransactionReceipt() and let ANY failure there
+  // (a slow/flaky public RPC -- base.publicnode.com here is a single
+  // shared, unauthenticated endpoint, a known rate-limit risk elsewhere in
+  // this codebase) fall into the same catch as a real send failure. A
+  // user staked successfully -- the wallet signed and broadcast it fine --
+  // but the receipt-confirmation poll afterward errored, and the UI
+  // reported the whole action as failed ("Invalid parameters were
+  // provided to the RPC method") even though it wasn't: the stake had
+  // already gone through. Once writeContractAsync resolves we have a
+  // real, broadcast transaction hash -- a failure to confirm it is our
+  // own polling failing, never reported as if the action itself failed.
   const sendTx = async (request) => {
     const hash = await writeContractAsync({ account: address, chainId: base.id, ...request });
-    if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
-    return hash;
+    let confirmed = false;
+    if (publicClient) {
+      try {
+        await publicClient.waitForTransactionReceipt({ hash });
+        confirmed = true;
+      } catch (waitErr) {
+        console.warn('[Rewards] broadcast succeeded but confirmation polling failed (tx likely still succeeded):', hash, waitErr);
+      }
+    }
+    return { hash, confirmed };
   };
 
   const rowKey = (side, epoch) => `${side}-${epoch}`;
@@ -198,8 +220,11 @@ function Rewards() {
       : { address: r.contracts.usageAccounting, abi: USAGE_ACCOUNTING_ABI, functionName: 'claimSellerEmissions', args: [[epoch]] };
     try {
       setStatus({ key, phase: 'claiming', message: t('stake.claiming', { epoch }) });
-      const hash = await sendTx(request);
-      setStatus({ key, phase: 'done', message: t('stake.claimed', { epoch }), hash });
+      const { hash, confirmed } = await sendTx(request);
+      setStatus({
+        key, phase: 'done', hash,
+        message: t(confirmed ? 'stake.claimed' : 'stake.submittedUnconfirmed', { epoch }),
+      });
       loadData(displayAddress, true);
     } catch (e) {
       logTxError('claim', request, e);
@@ -238,8 +263,11 @@ function Rewards() {
         const request = { address: r.contracts.usageRewards, abi: USAGE_REWARDS_ABI, functionName: 'stakeBuyerReward', args: [displayAddress, epoch, stakeAgentId, lockEpochs] };
         setStatus({ key, phase: 'staking', message: t('stake.stakingBuyer', { epoch, agent: stakeAgentId, lock: lockEpochs }) });
         try {
-          const hash = await sendTx(request);
-          setStatus({ key, phase: 'done', message: t('stake.stakedBuyer', { epoch, agent: stakeAgentId, lock: lockEpochs }), hash });
+          const { hash, confirmed } = await sendTx(request);
+          setStatus({
+            key, phase: 'done', hash,
+            message: t(confirmed ? 'stake.stakedBuyer' : 'stake.submittedUnconfirmed', { epoch, agent: stakeAgentId, lock: lockEpochs }),
+          });
         } catch (e) {
           logTxError('stake (buyer)', request, e);
           throw e;
@@ -248,8 +276,11 @@ function Rewards() {
         const request = { address: r.contracts.usageRewards, abi: USAGE_REWARDS_ABI, functionName: 'stakeAgentReward', args: [r.agentId, epoch, lockEpochs] };
         setStatus({ key, phase: 'staking', message: t('stake.stakingSeller', { epoch, lock: lockEpochs }) });
         try {
-          const hash = await sendTx(request);
-          setStatus({ key, phase: 'done', message: t('stake.stakedSeller', { epoch, lock: lockEpochs }), hash });
+          const { hash, confirmed } = await sendTx(request);
+          setStatus({
+            key, phase: 'done', hash,
+            message: t(confirmed ? 'stake.stakedSeller' : 'stake.submittedUnconfirmed', { epoch, lock: lockEpochs }),
+          });
         } catch (e) {
           logTxError('stake (seller)', request, e);
           throw e;
@@ -269,7 +300,12 @@ function Rewards() {
 
   const effectiveEpoch = rewards?.effectiveEpoch;
   const currentEpoch = rewards?.currentEpoch;
-  const totalUnclaimed = buyerRows.reduce((s, e) => s + e.amount, 0) + sellerRows.reduce((s, e) => s + e.amount, 0);
+  // buyerRows/sellerRows now include already-claimed epochs too (see above),
+  // so this must filter to !claimed explicitly -- it used to be safe to sum
+  // every row's amount because claimed rows were excluded from the list
+  // entirely (and their amount was zeroed at the source besides).
+  const totalUnclaimed = buyerRows.filter((e) => !e.claimed).reduce((s, e) => s + e.amount, 0)
+    + sellerRows.filter((e) => !e.claimed).reduce((s, e) => s + e.amount, 0);
 
   return (
     <div className="table-container" style={{ padding: '2rem' }}>
@@ -468,7 +504,11 @@ function RewardTable({ title, icon, side, rows, canAct, canClaim, claimNote, ver
                     <td>{formatNum(row.points)}</td>
                     <td style={{ fontWeight: 600 }}>{row.amount.toFixed(4)}</td>
                     <td>
-                      {!canAct ? (
+                      {row.claimed ? (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', color: 'var(--accent)', fontWeight: 600 }}>
+                          <CheckCircle size={13} />{t('stake.epochClaimed')}
+                        </span>
+                      ) : !canAct ? (
                         <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{t('stake.connectWallet')}</span>
                       ) : (
                         <div style={{ display: 'flex', gap: '0.375rem' }}>
