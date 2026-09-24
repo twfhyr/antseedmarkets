@@ -285,6 +285,15 @@ function Rewards() {
                 {displayAddress}<ExternalLink size={12} />
               </a>
               {!isConnected && searchAddress && <span style={{ color: 'var(--text-secondary)' }}>{t('stake.readonly')}</span>}
+              {rewards.contracts?.usageRewards && (
+                <a
+                  href={`https://basescan.org/address/${rewards.contracts.usageRewards}#readContract`}
+                  target="_blank" rel="noopener noreferrer"
+                  style={{ marginLeft: 'auto', color: 'var(--info)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: 600 }}
+                >
+                  {t('stake.verifyOnBasescan')}<ExternalLink size={12} />
+                </a>
+              )}
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
@@ -308,6 +317,7 @@ function Rewards() {
                 title={t('stake.buyerRewards')} icon={<Users size={16} />} side="buyer" rows={buyerRows}
                 canAct={canAct} canClaim={canAct && rewards.buyerUsage?.claimable}
                 claimNote={!rewards.buyerUsage?.claimable && rewards.buyerUsage?.recipient ? t('stake.paidToOperator', { addr: truncateAddress(rewards.buyerUsage.recipient) }) : null}
+                verifyHint={t('stake.verifyHintBuyer')}
                 sellers={sellers} stakeBounds={stakeBounds}
                 openStake={openStake} setOpenStake={setOpenStake}
                 status={status} isRowBusy={isRowBusy} requestClaim={requestClaim} doStake={doStake}
@@ -317,6 +327,7 @@ function Rewards() {
 
             {sellerRows.length > 0 && (
               <RewardTable
+                verifyHint={t('stake.verifyHintSeller')}
                 title={t('stake.sellerRewards')} icon={<TrendingUp size={16} />} side="seller" rows={sellerRows}
                 canAct={canAct} canClaim={canAct && rewards.sellerUsage?.claimable}
                 claimNote={rewards.agentId === 0 ? t('stake.needsAgent') : null}
@@ -383,13 +394,14 @@ function ClaimWarningModal({ onCancel, onConfirm, t }) {
   );
 }
 
-function RewardTable({ title, icon, side, rows, canAct, canClaim, claimNote, sellers, stakeBounds, openStake, setOpenStake, status, isRowBusy, requestClaim, doStake, agentId, t }) {
+function RewardTable({ title, icon, side, rows, canAct, canClaim, claimNote, verifyHint, sellers, stakeBounds, openStake, setOpenStake, status, isRowBusy, requestClaim, doStake, agentId, t }) {
   return (
     <div style={{ marginBottom: '2rem' }}>
       <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
         <span style={{ color: 'var(--accent)' }}>{icon}</span>{title}
       </h3>
       {claimNote && <div style={{ fontSize: '0.75rem', color: 'var(--warning)', marginBottom: '0.5rem' }}>{claimNote}</div>}
+      {verifyHint && <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', lineHeight: 1.5 }}>{verifyHint}</div>}
       <div style={{ overflowX: 'auto' }}>
         <table className="table" style={{ minWidth: '600px' }}>
           <thead>
