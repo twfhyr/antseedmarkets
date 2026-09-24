@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAccount, useWriteContract, usePublicClient } from 'wagmi';
+import { base } from 'wagmi/chains';
 import {
   Gift,
   Loader2,
@@ -159,25 +160,49 @@ function Rewards() {
     [rewards]
   );
 
+  // account/chainId passed explicitly rather than left implicit -- wagmi
+  // can otherwise resolve either from stale/ambiguous connector state
+  // (multi-account wallets, a connector that hasn't finished syncing its
+  // active chain), which is one real way a well-formed contract call ends
+  // up sent to the wallet with something wrong, surfacing as MetaMask's
+  // generic "Invalid parameters were provided to the RPC method" rather
+  // than a specific wagmi/viem error.
   const sendTx = async (request) => {
-    const hash = await writeContractAsync(request);
+    const hash = await writeContractAsync({ account: address, chainId: base.id, ...request });
     if (publicClient) await publicClient.waitForTransactionReceipt({ hash });
     return hash;
   };
 
   const rowKey = (side, epoch) => `${side}-${epoch}`;
 
+  // A failed claim/stake tx used to only ever surface e.shortMessage/e.message
+  // on screen -- for a wallet-level rejection (e.g. "Invalid parameters were
+  // provided to the RPC method") that string alone doesn't say which call or
+  // which argument, so there was nothing to go on to diagnose it fast. Logs
+  // the full request to the console (devtools, not sent anywhere) with the
+  // address masked -- never log a full address, per site policy.
+  const logTxError = (context, request, error) => {
+    console.error(`[Rewards] ${context} failed`, {
+      functionName: request.functionName,
+      contractAddress: request.address,
+      args: request.args?.map((a) => (typeof a === 'string' && a.startsWith('0x') && a.length === 42 ? truncateAddress(a) : a)),
+      error,
+    });
+  };
+
   const doClaim = async (side, epoch) => {
     const key = rowKey(side, epoch);
     const r = rewards;
+    const request = side === 'buyer'
+      ? { address: r.contracts.usageRewards, abi: USAGE_REWARDS_ABI, functionName: 'claimBuyerReward', args: [displayAddress, epoch] }
+      : { address: r.contracts.usageAccounting, abi: USAGE_ACCOUNTING_ABI, functionName: 'claimSellerEmissions', args: [[epoch]] };
     try {
       setStatus({ key, phase: 'claiming', message: t('stake.claiming', { epoch }) });
-      const hash = side === 'buyer'
-        ? await sendTx({ address: r.contracts.usageRewards, abi: USAGE_REWARDS_ABI, functionName: 'claimBuyerReward', args: [displayAddress, epoch] })
-        : await sendTx({ address: r.contracts.usageAccounting, abi: USAGE_ACCOUNTING_ABI, functionName: 'claimSellerEmissions', args: [[epoch]] });
+      const hash = await sendTx(request);
       setStatus({ key, phase: 'done', message: t('stake.claimed', { epoch }), hash });
       loadData(displayAddress, true);
     } catch (e) {
+      logTxError('claim', request, e);
       setStatus({ key, phase: 'error', message: e.shortMessage || e.message });
     }
   };
@@ -194,18 +219,41 @@ function Rewards() {
   const doStake = async (side, epoch) => {
     const key = rowKey(side, epoch);
     const r = rewards;
-    const lockEpochs = openStake?.lockEpochs ?? stakeBounds.max;
+    // Coerced explicitly rather than trusted as already-numeric -- agentId
+    // arrives from a <select> (fetchSellers()'s agentId is a string in the
+    // API response) and lockEpochs from a <input type="number">, and either
+    // can end up NaN/non-finite from a stray edge case upstream. A NaN/
+    // non-finite arg silently produces a malformed encoded call, which is
+    // one real way to get a generic wallet-level "Invalid parameters" error
+    // instead of a clear one -- fail with a specific message here instead.
+    const lockEpochs = Number(openStake?.lockEpochs ?? stakeBounds.max);
+    if (!Number.isFinite(lockEpochs)) {
+      setStatus({ key, phase: 'error', message: t('stake.pickProvider') });
+      return;
+    }
     try {
       if (side === 'buyer') {
-        const stakeAgentId = openStake?.agentId;
-        if (!stakeAgentId) { setStatus({ key, phase: 'error', message: t('stake.pickProvider') }); return; }
+        const stakeAgentId = Number(openStake?.agentId);
+        if (!stakeAgentId || !Number.isFinite(stakeAgentId)) { setStatus({ key, phase: 'error', message: t('stake.pickProvider') }); return; }
+        const request = { address: r.contracts.usageRewards, abi: USAGE_REWARDS_ABI, functionName: 'stakeBuyerReward', args: [displayAddress, epoch, stakeAgentId, lockEpochs] };
         setStatus({ key, phase: 'staking', message: t('stake.stakingBuyer', { epoch, agent: stakeAgentId, lock: lockEpochs }) });
-        const hash = await sendTx({ address: r.contracts.usageRewards, abi: USAGE_REWARDS_ABI, functionName: 'stakeBuyerReward', args: [displayAddress, epoch, stakeAgentId, lockEpochs] });
-        setStatus({ key, phase: 'done', message: t('stake.stakedBuyer', { epoch, agent: stakeAgentId, lock: lockEpochs }), hash });
+        try {
+          const hash = await sendTx(request);
+          setStatus({ key, phase: 'done', message: t('stake.stakedBuyer', { epoch, agent: stakeAgentId, lock: lockEpochs }), hash });
+        } catch (e) {
+          logTxError('stake (buyer)', request, e);
+          throw e;
+        }
       } else {
+        const request = { address: r.contracts.usageRewards, abi: USAGE_REWARDS_ABI, functionName: 'stakeAgentReward', args: [r.agentId, epoch, lockEpochs] };
         setStatus({ key, phase: 'staking', message: t('stake.stakingSeller', { epoch, lock: lockEpochs }) });
-        const hash = await sendTx({ address: r.contracts.usageRewards, abi: USAGE_REWARDS_ABI, functionName: 'stakeAgentReward', args: [r.agentId, epoch, lockEpochs] });
-        setStatus({ key, phase: 'done', message: t('stake.stakedSeller', { epoch, lock: lockEpochs }), hash });
+        try {
+          const hash = await sendTx(request);
+          setStatus({ key, phase: 'done', message: t('stake.stakedSeller', { epoch, lock: lockEpochs }), hash });
+        } catch (e) {
+          logTxError('stake (seller)', request, e);
+          throw e;
+        }
       }
       setOpenStake(null);
       loadData(displayAddress, true);
