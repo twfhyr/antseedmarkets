@@ -110,3 +110,15 @@ export async function fetchBuyerActivity(address) {
 export async function fetchSellerActivity(address) {
   return get(`/history/seller/${encodeURIComponent(address)}`);
 }
+
+/** Unclaimed recognized-usage $ANTS rewards for one address, both as a
+ *  buyer and (if it's a registered seller agent) as a seller -- feeds
+ *  Rewards.jsx. Cached server-side ~90s; pass bustCache to force a fresh
+ *  on-chain read (used right after a claim/stake tx confirms). Resolves to
+ *  `{ currentEpoch, effectiveEpoch, agentId, buyerUsage: {total, claimable,
+ *  recipient, epochs}, sellerUsage: {total, claimable, epochs},
+ *  contracts: {usageRewards, usageAccounting, sellerPools, ...} }`. */
+export async function fetchRewards(address, bustCache = false) {
+  const bust = bustCache ? '&bust=1' : '';
+  return get(`/rewards?address=${address}${bust}`);
+}

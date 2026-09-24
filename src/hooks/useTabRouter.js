@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 
-// Tabs <-> URL path segments. Only two tabs exist in this repo -- the
-// lANTS marketplace and a wallet's Portfolio -- see README.md for why this
-// is a separate, product-only repo from antseed-zh. 'stake' (labelled
-// "lANTS" in the UI, key kept from antseed-zh's history) maps to the bare
-// base path, so the root URL (antseedmarkets.com/) lands directly on the
-// marketplace by default.
-const TAB_PATHS = { stake: '', portfolio: 'portfolio' };
+// Tabs <-> URL path segments. Three tabs exist in this repo -- the lANTS
+// marketplace, a wallet's Portfolio, and Rewards (added 2026-09-24) -- see
+// README.md for why this is a separate, product-only repo from antseed-zh.
+// 'stake' (labelled "lANTS" in the UI, key kept from antseed-zh's history)
+// maps to the bare base path, so the root URL (antseedmarkets.com/) lands
+// directly on the marketplace by default.
+const TAB_PATHS = { stake: '', portfolio: 'portfolio', rewards: 'rewards' };
 const PATH_TABS = Object.fromEntries(
   Object.entries(TAB_PATHS).filter(([, p]) => p).map(([tab, p]) => [p, tab])
 );

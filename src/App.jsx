@@ -1,6 +1,7 @@
 import React from 'react';
 import StakeANTS from './components/StakeANTS';
 import Portfolio from './components/Portfolio';
+import Rewards from './components/Rewards';
 import Header from './components/Header';
 import { useI18n } from './i18n/index.jsx';
 import { useTabRouter, tabHref } from './hooks/useTabRouter';
@@ -10,7 +11,8 @@ import { useBuildFreshness } from './hooks/useBuildFreshness';
 // (locked ANTS position NFTs) -- split out of antseed-zh's monorepo
 // 2026-09-24 so this domain's identity, preview, and codebase are its own
 // rather than a build variant of the company dashboard. See README.md.
-// Only two sections exist here, ever -- no nav-gating flag needed the way
+// Three sections exist here (Rewards added 2026-09-24, ported from
+// antseed-zh's RewardsANTS.jsx) -- no nav-gating flag needed the way
 // antseed-zh.com's build variant used IS_MARKET_VARIANT.
 function App() {
   const { t } = useI18n();
@@ -40,10 +42,18 @@ function App() {
           >
             {t('nav.portfolio')}
           </a>
+          <a
+            href={tabHref('rewards')}
+            className={`tab ${activeTab === 'rewards' ? 'active' : ''}`}
+            onClick={(e) => { e.preventDefault(); setActiveTab('rewards'); }}
+          >
+            {t('nav.rewards')}
+          </a>
         </div>
 
         {activeTab === 'stake' && <StakeANTS />}
         {activeTab === 'portfolio' && <Portfolio />}
+        {activeTab === 'rewards' && <Rewards />}
       </main>
     </div>
   );
