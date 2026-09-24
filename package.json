@@ -1,0 +1,29 @@
+{
+  "name": "antseedmarkets",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "antseedmarkets.com -- the lANTS marketplace and portfolio, split out of antseed-zh as its own product-only site (2026-09-24). The marketplace built by ants for ants.",
+  "scripts": {
+    "dev": "vite",
+    "build": "node scripts/gen-build-id.cjs && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@opensea/seaport-js": "^4.3.0",
+    "@rainbow-me/rainbowkit": "^2.2.11",
+    "@tanstack/react-query": "^5.100.10",
+    "ethers": "^6.17.0",
+    "lucide-react": "^0.460.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "viem": "^2.49.2",
+    "wagmi": "^2.19.5"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "vite": "^6.0.0"
+  }
+}
