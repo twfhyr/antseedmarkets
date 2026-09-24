@@ -1,15 +1,12 @@
 <svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <title>antseed-zh</title>
+  <title>antseedmarkets</title>
   <!--
-    Icon for antseed-zh.
-
-    Built from the official AntSeed mark (apps/website/static/antseed-logo-icon.svg
-    in the monorepo): the same three-segment ant body, six legs and two antennae,
-    in the official emerald #10B981 on the site's dark background. The Chinese
-    element is the character 蚁 ("ant") set in the lower-right corner as a
-    community badge, which is what distinguishes this from the upstream mark.
-    Geometry is scaled from the original 200x200 viewBox to 256x256 (x1.28)
-    and shifted up/left slightly to leave room for the badge.
+    Icon for antseedmarkets. Built from the official AntSeed mark (the same
+    three-segment ant body, six legs and two antennae as antseed-zh's own
+    icon), in the official emerald #10B981 on a dark background, with no
+    Chinese-language badge this time (antseedmarkets is English-only, see
+    src/i18n/index.jsx), just the ant. Re-centered now that there's no
+    badge reserving space in the bottom-right corner.
   -->
   <defs>
     <clipPath id="round">
@@ -20,7 +17,7 @@
   <g clip-path="url(#round)">
     <rect width="256" height="256" fill="#0B1512" />
 
-    <g transform="translate(-4 -10) scale(1.2)" fill="#10B981">
+    <g transform="translate(6 4) scale(1.2)" fill="#10B981">
       <!-- antenna tips -->
       <circle cx="69.57" cy="27.49" r="6.25" />
       <circle cx="129.57" cy="27.49" r="6.25" />
@@ -54,17 +51,6 @@
       <!-- rear legs -->
       <path d="M84.087 140.436a2.25 2.25 0 0 1 1.826 4.111l-45 20a2.25 2.25 0 0 1-1.826-4.111l45-20Z" />
       <path d="M112.944 141.579a2.25 2.25 0 0 1 2.969-1.143l45 20a2.25 2.25 0 0 1-1.826 4.111l-45-20a2.25 2.25 0 0 1-1.143-2.968Z" />
-    </g>
-
-    <!-- Chinese badge: 蚁 = "ant" -->
-    <g>
-      <circle cx="196" cy="196" r="46" fill="#0B1512" />
-      <circle cx="196" cy="196" r="40" fill="#10B981" />
-      <!-- 蚁 ("ant") converted to an outline path so the icon does not
-           depend on a CJK font being installed on the viewer's machine
-           (a missing font would otherwise render a tofu box).
-           Source: Noto Sans CJK SC Regular, U+8681. -->
-      <path fill="#04120C" d="M200.628 175.238C202.76 178.67 205.048 183.24599999999998 205.88 186.054L209.312 184.39C208.376 181.582 205.984 177.162 203.8 173.834ZM187.368 205.08599999999998C188.148 206.802 188.928 208.726 189.552 210.65L184.716 211.43V201.34199999999998H192.308V182.414H184.768V173.158H181.18V182.414H173.744V203.838H176.916V201.34199999999998H181.18V212.002L171.82 213.458L172.44400000000002 217.202L190.592 213.978C190.95600000000002 215.32999999999998 191.216 216.578 191.372 217.67L191.632 217.566L191.112 217.878C191.892 218.606 193.036 220.01 193.556 220.84199999999998C198.44400000000002 218.034 202.39600000000002 214.602 205.516 210.59799999999998C208.636 214.862 212.536 218.346 217.372 220.84199999999998C218.048 219.802 219.244 218.346 220.18 217.618C215.136 215.226 211.132 211.638 207.96 207.166C213.472 198.58599999999998 216.176 188.134 217.996 177.006L214.044 176.434C212.64 186.314 210.352 195.726 205.724 203.578C201.72 196.454 199.328 187.51 197.872 177.37L194.18 177.89C196.0 189.538 198.704 199.47 203.332 207.26999999999998C200.888 210.494 197.976 213.406 194.44 215.85C193.764 212.418 192.152 207.79 190.38400000000001 204.15ZM176.916 185.69H181.44V198.066H176.916ZM184.45600000000002 185.69H189.136V198.066H184.45600000000002Z" />
     </g>
   </g>
 </svg>
