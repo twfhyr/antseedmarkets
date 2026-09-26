@@ -904,6 +904,7 @@ function StakeANTS() {
                   cardProps={detailItem ? commonCardProps(detailItem) : null}
                   trades={detailTrades}
                   tradesLoading={detailTradesLoading}
+                  onOpenDetail={openDetail}
                   t={t}
                   lang={lang}
                 />
@@ -1246,7 +1247,7 @@ function LantsNftCard({
   );
 }
 
-function LantsDetailPanel({ tokenId, item, loading, error, backHref, onBack, cardProps, trades, tradesLoading, t, lang }) {
+function LantsDetailPanel({ tokenId, item, loading, error, backHref, onBack, cardProps, trades, tradesLoading, onOpenDetail, t, lang }) {
   return (
     <section className="lants-detail os-item">
       <div className="lants-detail__header">
@@ -1287,7 +1288,7 @@ function LantsDetailPanel({ tokenId, item, loading, error, backHref, onBack, car
           page={1}
           pageSize={50}
           onPageChange={() => {}}
-          onOpenDetail={openDetail}
+          onOpenDetail={onOpenDetail}
           t={t}
           lang={lang}
         />
