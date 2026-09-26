@@ -82,17 +82,37 @@ const MARKET_PATH_TABS = Object.fromEntries(
 );
 const MARKET_DEFAULT_TAB = 'listed';
 
+function detailIdFromSegments(first, second, third) {
+  if (first !== 'lants' && first !== 'iants') return null;
+  const raw = second === 'nft' || second === 'item' ? third : second;
+  if (!/^\d+$/.test(raw || '')) return null;
+  const id = Number(raw);
+  return Number.isSafeInteger(id) ? id : null;
+}
+
+function lantsDetailIdFromLocation() {
+  const path = window.location.pathname;
+  const rel = path.startsWith(BASE) ? path.slice(BASE.length) : path.replace(/^\//, '');
+  const [first, second, third] = rel.split('/');
+  return detailIdFromSegments(first, second, third);
+}
+
 function marketTabFromLocation() {
   const path = window.location.pathname;
   const rel = path.startsWith(BASE) ? path.slice(BASE.length) : path.replace(/^\//, '');
   const [first, second] = rel.split('/');
   if (first !== 'lants' && first !== 'iants' && first !== '') return null;
+  if (detailIdFromSegments(first, second, rel.split('/')[2]) != null) return 'all';
   return MARKET_PATH_TABS[second] || null;
 }
 
 export function marketTabHref(tab) {
   const segment = MARKET_TAB_PATHS[tab] || MARKET_TAB_PATHS[MARKET_DEFAULT_TAB];
   return `${BASE}lants/${segment}`;
+}
+
+export function lantsDetailHref(tokenId) {
+  return `${BASE}lants/${encodeURIComponent(String(tokenId))}`;
 }
 
 /**
@@ -120,4 +140,34 @@ export function useMarketTabRouter() {
   }, []);
 
   return [marketTab, setMarketTab];
+}
+
+export function useLantsDetailRouter() {
+  const [detailId, setDetailId] = useState(lantsDetailIdFromLocation);
+
+  useEffect(() => {
+    const onPopState = () => setDetailId(lantsDetailIdFromLocation());
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
+  const openDetail = useCallback((tokenId) => {
+    const id = Number(tokenId);
+    if (!Number.isSafeInteger(id)) return;
+    setDetailId(id);
+    const url = lantsDetailHref(id);
+    if (window.location.pathname !== url) {
+      window.history.pushState(null, '', url);
+    }
+  }, []);
+
+  const closeDetail = useCallback(() => {
+    setDetailId(null);
+    const url = marketTabHref('all');
+    if (window.location.pathname !== url) {
+      window.history.pushState(null, '', url);
+    }
+  }, []);
+
+  return [detailId, openDetail, closeDetail];
 }

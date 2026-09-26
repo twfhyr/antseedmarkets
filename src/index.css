@@ -1268,6 +1268,61 @@ text-decoration: underline;
   gap: 0.75rem;
   align-items: center;
 }
+.lants-nft__artlink {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+.lants-nft__artlink .lants-nft__svg {
+  transition: transform 0.18s ease, filter 0.18s ease;
+}
+.lants-nft__artlink:hover .lants-nft__svg,
+.lants-nft__artlink:focus-visible .lants-nft__svg {
+  transform: translateY(-2px);
+  filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.24));
+}
+.lants-detail {
+  margin: 0 0 1.5rem;
+}
+.lants-detail__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+.lants-detail__header h3 {
+  margin: 0.25rem 0 0;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+.lants-detail__back {
+  font-size: 0.8125rem;
+}
+.lants-detail__permalink {
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.25rem 0.6rem;
+}
+.lants-detail__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+.lants-detail__status--error {
+  color: var(--warning);
+}
+.lants-detail__grid {
+  grid-template-columns: minmax(240px, 340px);
+}
 .lants-nft__listbtn {
   background: var(--accent);
   color: #fff;
@@ -1477,4 +1532,84 @@ text-decoration: underline;
 .lants-pager button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+/* OpenSea-like marketplace chrome. Layout and density only; trade actions stay the same. */
+.os-market__inner {
+  max-width: 1120px;
+}
+.os-market h2 {
+  letter-spacing: -0.03em;
+}
+.os-tabs {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0;
+  gap: 0 !important;
+}
+.os-tab {
+  border: none;
+  background: transparent;
+  border-radius: 0;
+  border-bottom: 2px solid transparent;
+  padding: 0.85rem 1.1rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+.os-tab.is-active {
+  color: var(--text-primary);
+  border-bottom-color: var(--text-primary);
+  background: transparent;
+}
+.os-market .lants-nft-grid {
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 1rem;
+}
+.os-market .lants-nft {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  padding-bottom: 0.25rem;
+}
+.os-market .lants-nft__svg {
+  border-radius: 0;
+  box-shadow: none;
+}
+.os-market .lants-nft:hover .lants-nft__svg {
+  transform: none;
+  box-shadow: none;
+}
+.os-market .lants-nft__caption {
+  padding: 0.75rem 0.9rem 1rem;
+}
+.os-market .lants-nft__price {
+  font-size: 0.95rem;
+}
+.os-item .os-item__body {
+  display: grid;
+  grid-template-columns: minmax(260px, 420px) minmax(260px, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+@media (max-width: 800px) {
+  .os-item .os-item__body {
+    grid-template-columns: 1fr;
+  }
+}
+.os-activity {
+  margin-top: 2rem;
+  border-top: 1px solid var(--border);
+  padding-top: 1.25rem;
+}
+.os-activity__title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0 0 0.75rem;
+}
+.os-activity .table {
+  width: 100%;
 }

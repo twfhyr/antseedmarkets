@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { fetchSellers, fetchLantsMarket, fetchLantsOffers, postLantsTrade, fetchLantsTrades } from '../api';
 import { useI18n } from '../i18n/index.jsx';
-import { useMarketTabRouter, marketTabHref } from '../hooks/useTabRouter';
+import { useMarketTabRouter, marketTabHref, useLantsDetailRouter, lantsDetailHref } from '../hooks/useTabRouter';
 import {
   createAndPostListing, fulfillListing, cancelListing, makeOffer, cancelOffer, acceptOffer,
   splitPosition, mergePositions, movePosition, isProviderActivationStake,
@@ -48,11 +48,29 @@ const formatUsdCompact = (n) => {
 // doesn't care what token an old signed order names), so old rows are kept
 // rather than hidden, just formatted using their own recorded decimals
 // instead of assuming everything is 6.
-const CURRENCY_DECIMALS = { USDC: 6, WETH: 18, ETH: 18 };
+const USDC_BASE_LOWER = USDC_BASE.toLowerCase();
+const WETH_BASE_LOWER = WETH_BASE.toLowerCase();
+const CURRENCY_DECIMALS = { USDC: 6, WETH: 18, ETH: 18, [USDC_BASE_LOWER]: 6, [WETH_BASE_LOWER]: 18 };
+const normalizeCurrency = (currency) => {
+  if (!currency) return '';
+  const c = String(currency);
+  const lower = c.toLowerCase();
+  if (lower === USDC_BASE_LOWER) return 'USDC';
+  if (lower === WETH_BASE_LOWER) return 'WETH';
+  return c;
+};
 const formatTradeAmount = (priceWei, currency) => {
-  const decimals = CURRENCY_DECIMALS[currency] ?? 18;
+  const symbol = normalizeCurrency(currency);
+  const raw = String(currency || '').toLowerCase();
+  const looksLikeAddress = raw.startsWith('0x') && raw.length === 42;
+  const decimals = CURRENCY_DECIMALS[symbol]
+    ?? CURRENCY_DECIMALS[raw]
+    ?? (looksLikeAddress ? 6 : 18);
   const n = Number(priceWei) / 10 ** decimals;
-  return `${n.toLocaleString(undefined, { maximumFractionDigits: decimals === 6 ? 2 : 6 })} ${currency || ''}`.trim();
+  if (!Number.isFinite(n)) return '—';
+  const label = symbol || (looksLikeAddress ? 'USDC' : '');
+  const formatted = n.toLocaleString(undefined, { maximumFractionDigits: decimals === 6 ? 2 : 6 });
+  return label ? `${formatted} ${label}` : formatted;
 };
 // An offer row's `weth` field is really just "whatever ERC20 token address
 // this offer's payment item names" (the DB column predates the USDC
@@ -144,6 +162,12 @@ function StakeANTS() {
   const [marketLoading, setMarketLoading] = useState(true);
   const [marketError, setMarketError] = useState(false);
   const [marketTab, setMarketTab] = useMarketTabRouter(); // 'listed' | 'all' | 'mine' -- URL-driven, see /lants/sales|all|mine
+  const [detailTokenId, openDetail, closeDetail] = useLantsDetailRouter();
+  const [detailItem, setDetailItem] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState(false);
+  const [detailTrades, setDetailTrades] = useState(null);
+  const [detailTradesLoading, setDetailTradesLoading] = useState(false);
   const [marketPage, setMarketPage] = useState(1);
   // Defaults to per-ANTS price (cheapest first) rather than id -- the same
   // "rank by unit price, not by total" convention a BRC-20 marketplace
@@ -233,7 +257,12 @@ function StakeANTS() {
   const autoTabAppliedRef = useRef(false);
 
   useEffect(() => {
-    if (marketTab === 'history') return;
+    if (detailTokenId != null) return;
+    if (marketTab === 'history') {
+      setMarketLoading(false);
+      setMarketError(false);
+      return;
+    }
     if (marketTab === 'mine' && !address) return;
     let cancelled = false;
     setMarketLoading(true);
@@ -244,7 +273,8 @@ function StakeANTS() {
         setMarket(data);
         if (!autoTabAppliedRef.current) {
           autoTabAppliedRef.current = true;
-          if (marketTab === 'listed' && (data?.listedCount || 0) === 0) setMarketTab('all');
+          // Stay on For sale even when listedCount is 0 -- bouncing to All
+          // hid a just-posted listing whenever the cache had not caught up.
         }
       })
       .catch((e) => {
@@ -256,7 +286,71 @@ function StakeANTS() {
       })
       .finally(() => { if (!cancelled) setMarketLoading(false); });
     return () => { cancelled = true; };
-  }, [marketQuery, marketTab, address]);
+  }, [marketQuery, marketTab, address, detailTokenId]);
+
+  useEffect(() => {
+    if (detailTokenId == null) {
+      setDetailItem(null);
+      setDetailError(false);
+      setDetailLoading(false);
+      return;
+    }
+    let cancelled = false;
+    const findOnPage = (data) => (data?.items || []).find((p) => p.id === detailTokenId) || null;
+    const loadDetail = async () => {
+      setMarketLoading(true);
+      setDetailLoading(true);
+      setDetailError(false);
+      setDetailItem(null);
+      setMarketError(false);
+      try {
+        // Force the requested id into the backend's fresh market build, then
+        // walk the cached paginated list until we find its own item row. The
+        // API stays the shared market endpoint so this standalone frontend
+        // does not duplicate chain reads or position-indexing logic.
+        const first = await fetchLantsMarket({ page: 1, pageSize: 100, sort: 'id', ensureIds: String(detailTokenId), wait: '1' });
+        if (cancelled) return;
+        setMarket(first);
+        let item = findOnPage(first);
+        const pages = Math.ceil((first?.total || 0) / (first?.pageSize || 100));
+        for (let page = 2; !item && page <= pages; page += 1) {
+          const next = await fetchLantsMarket({ page, pageSize: first?.pageSize || 100, sort: 'id' });
+          if (cancelled) return;
+          item = findOnPage(next);
+        }
+        if (item) setDetailItem(item);
+        else setDetailError(true);
+      } catch (e) {
+        console.error('Failed to load lANTS NFT detail:', e);
+        if (!cancelled) {
+          setMarket({ items: [], sellers: [] });
+          setDetailError(true);
+        }
+      } finally {
+        if (!cancelled) setMarketLoading(false);
+        if (!cancelled) setDetailLoading(false);
+      }
+    };
+    loadDetail();
+    return () => { cancelled = true; };
+  }, [detailTokenId]);
+
+  useEffect(() => {
+    if (detailTokenId == null) {
+      setDetailTrades(null);
+      return;
+    }
+    let cancelled = false;
+    setDetailTradesLoading(true);
+    fetchLantsTrades({ tokenId: detailTokenId, page: 1, pageSize: 50 })
+      .then((data) => { if (!cancelled) setDetailTrades(data); })
+      .catch((e) => {
+        console.error('Failed to load NFT trade history:', e);
+        if (!cancelled) setDetailTrades({ trades: [], total: 0 });
+      })
+      .finally(() => { if (!cancelled) setDetailTradesLoading(false); });
+    return () => { cancelled = true; };
+  }, [detailTokenId]);
 
   // Trade history -- separate from the market fetch above, only loaded on
   // the History tab. Reuses marketPage for pagination since the two views
@@ -573,6 +667,7 @@ function StakeANTS() {
   // nudges the server's own background refresh along and reads back
   // whatever it already has.
   useEffect(() => {
+    if (detailTokenId != null) return;
     if (marketTab === 'history') return;
     if (marketTab === 'mine' && !address) return;
     const interval = setInterval(() => {
@@ -580,7 +675,7 @@ function StakeANTS() {
       if (offersOpenFor != null) loadOffers(offersOpenFor, true);
     }, 30_000);
     return () => clearInterval(interval);
-  }, [marketQuery, marketTab, address, offersOpenFor, loadOffers]);
+  }, [marketQuery, marketTab, address, offersOpenFor, loadOffers, detailTokenId]);
 
   const doAcceptOffer = async (offer) => {
     if (!walletClient || !address) return;
@@ -636,6 +731,9 @@ function StakeANTS() {
     address,
     onCancel: doCancel,
     cancelState: cancelState?.id === p.id ? cancelState : null,
+    detailHref: lantsDetailHref(p.id),
+    openSeaHref: poolsAddress ? `https://opensea.io/item/base/${poolsAddress}/${p.id}` : null,
+    onOpenDetail: () => openDetail(p.id),
     onOpenOffer: openOfferModal,
     canOffer: marketTab !== 'mine' && !!(isConnected && address && p.owner && address.toLowerCase() !== p.owner.toLowerCase() && !isProviderActivationStake(p.amount)),
     offersOpen: offersOpenFor === p.id,
@@ -651,8 +749,8 @@ function StakeANTS() {
   });
 
   return (
-    <div className="table-container" style={{ padding: '2rem' }}>
-      <div style={{ maxWidth: '960px' }}>
+    <div className="table-container os-market" style={{ padding: '2rem' }}>
+      <div className="os-market__inner">
         <div style={{ marginBottom: '1.5rem' }}>
           <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <Layers size={24} style={{ color: 'var(--accent)' }} />
@@ -690,7 +788,7 @@ function StakeANTS() {
               <span>{t('stake.marketError')}</span>
             </div>
           )}
-          {!marketLoading && market && (
+          {!marketLoading && (market || marketTab === 'history') && (
             <>
               {marketTab !== 'history' && (
                 <>
@@ -713,7 +811,7 @@ function StakeANTS() {
                   )}
                 </>
               )}
-              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+              <div className="os-tabs" style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
                 <FilterChip active={marketTab === 'listed'} href={marketTabHref('listed')} onClick={() => setMarketTabAndReset('listed')} label={t('stake.filterListed')} />
                 <FilterChip active={marketTab === 'all'} href={marketTabHref('all')} onClick={() => setMarketTabAndReset('all')} label={t('stake.filterAll')} />
                 {isConnected && address && (
@@ -722,7 +820,21 @@ function StakeANTS() {
                 <FilterChip active={marketTab === 'history'} href={marketTabHref('history')} onClick={() => setMarketTabAndReset('history')} label={t('stake.filterHistory')} />
               </div>
 
-              {marketTab === 'history' ? (
+              {detailTokenId != null ? (
+                <LantsDetailPanel
+                  tokenId={detailTokenId}
+                  item={detailItem}
+                  loading={detailLoading}
+                  error={detailError}
+                  backHref={marketTabHref('all')}
+                  onBack={() => { closeDetail(); setMarketTabAndReset('all'); }}
+                  cardProps={detailItem ? commonCardProps(detailItem) : null}
+                  trades={detailTrades}
+                  tradesLoading={detailTradesLoading}
+                  t={t}
+                  lang={lang}
+                />
+              ) : marketTab === 'history' ? (
                 <TradeHistoryPanel
                   trades={trades} loading={tradesLoading} error={tradesError}
                   page={marketPage} pageSize={MARKET_PAGE_SIZE} onPageChange={setMarketPage}
@@ -855,7 +967,7 @@ function LantsNftCard({
   position: p, seller, currentEpoch, genesis, epochDuration, t, lang, listing, setListForm, canList, onBuy, canBuy, buyState,
   activation, isOwner, address, onCancel, cancelState, onOpenOffer, canOffer,
   offersOpen, offers, onToggleOffers, onAcceptOffer, onCancelOffer, offerActionState,
-  setSplitForm, canSplit, setMoveForm, canMove, mergeCheckbox,
+  setSplitForm, canSplit, setMoveForm, canMove, mergeCheckbox, detailHref, openSeaHref, onOpenDetail,
 }) {
   const sellerName = seller?.name || (p.agentId != null ? t('stake.agent', { id: p.agentId }) : '—');
   const state = (p.stakeStartEpoch != null && p.stakeEndEpoch != null) ? positionState(p, currentEpoch) : null;
@@ -872,18 +984,40 @@ function LantsNftCard({
 
   return (
     <figure className="lants-nft">
-      <LantsNftArt
-        position={p}
-        sellerName={sellerName}
-        state={state}
-        lockDays={lockDays}
-        daysRemaining={daysRemaining}
-        startDate={startDate}
-        endDate={endDate}
-        t={t}
-        lang={lang}
-        listingLabel={listing ? formatListing(listing) : null}
-      />
+      {detailHref ? (
+        <a
+          href={detailHref}
+          className="lants-nft__artlink"
+          onClick={onOpenDetail ? (e) => { e.preventDefault(); onOpenDetail(); } : undefined}
+          aria-label={t('stake.detailTitle', { id: p.id })}
+        >
+          <LantsNftArt
+            position={p}
+            sellerName={sellerName}
+            state={state}
+            lockDays={lockDays}
+            daysRemaining={daysRemaining}
+            startDate={startDate}
+            endDate={endDate}
+            t={t}
+            lang={lang}
+            listingLabel={listing ? formatListing(listing) : null}
+          />
+        </a>
+      ) : (
+        <LantsNftArt
+          position={p}
+          sellerName={sellerName}
+          state={state}
+          lockDays={lockDays}
+          daysRemaining={daysRemaining}
+          startDate={startDate}
+          endDate={endDate}
+          t={t}
+          lang={lang}
+          listingLabel={listing ? formatListing(listing) : null}
+        />
+      )}
       <figcaption className="lants-nft__caption">
         {mergeCheckbox && (
           <label className="lants-nft__mergecheck">
@@ -916,6 +1050,12 @@ function LantsNftCard({
           </div>
         )}
         <div className="lants-nft__links">
+          {openSeaHref && (
+            <a href={openSeaHref} target="_blank" rel="noopener noreferrer">
+              {t('stake.viewOnOpenSea')}
+              <ExternalLink size={12} />
+            </a>
+          )}
           {canList && setListForm && (
             <button
               type="button"
@@ -1026,6 +1166,55 @@ function LantsNftCard({
         )}
       </figcaption>
     </figure>
+  );
+}
+
+function LantsDetailPanel({ tokenId, item, loading, error, backHref, onBack, cardProps, trades, tradesLoading, t, lang }) {
+  return (
+    <section className="lants-detail os-item">
+      <div className="lants-detail__header">
+        <div>
+          <a
+            href={backHref}
+            className="lants-detail__back"
+            onClick={(e) => { e.preventDefault(); onBack(); }}
+          >
+            {t('stake.detailBack')}
+          </a>
+          <h3>{t('stake.detailTitle', { id: tokenId })}</h3>
+        </div>
+      </div>
+      {loading && (
+        <div className="lants-detail__status">
+          <Loader2 size={16} className="spin" />
+          <span>{t('stake.detailLoading')}</span>
+        </div>
+      )}
+      {!loading && error && (
+        <div className="lants-detail__status lants-detail__status--error">
+          <AlertCircle size={16} />
+          <span>{t('stake.detailNotFound', { id: tokenId })}</span>
+        </div>
+      )}
+      {!loading && item && cardProps && (
+        <div className="os-item__body">
+          <LantsNftCard position={item} {...cardProps} />
+        </div>
+      )}
+      <div className="os-activity">
+        <h4 className="os-activity__title">{t('stake.itemActivity')}</h4>
+        <TradeHistoryPanel
+          trades={trades}
+          loading={tradesLoading}
+          error={false}
+          page={1}
+          pageSize={50}
+          onPageChange={() => {}}
+          t={t}
+          lang={lang}
+        />
+      </div>
+    </section>
   );
 }
 
@@ -1400,19 +1589,8 @@ function FilterChip({ active, onClick, label, href }) {
   return (
     <a
       href={href}
+      className={`os-tab${active ? ' is-active' : ''}`}
       onClick={(e) => { e.preventDefault(); onClick(); }}
-      style={{
-        padding: '0.35rem 0.85rem',
-        borderRadius: '999px',
-        border: active ? '1px solid var(--accent)' : '1px solid var(--border)',
-        background: active ? 'var(--accent-dim)' : 'var(--bg-secondary)',
-        color: active ? 'var(--accent)' : 'var(--text-secondary)',
-        fontSize: '0.8125rem',
-        fontWeight: 600,
-        cursor: 'pointer',
-        textDecoration: 'none',
-        display: 'inline-block',
-      }}
     >
       {label}
     </a>
