@@ -1613,3 +1613,59 @@ text-decoration: underline;
 .os-activity .table {
   width: 100%;
 }
+.os-nft-link {
+  color: var(--text-primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+.os-nft-link:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+.os-tx-link {
+  color: var(--info);
+  font-family: var(--font-data);
+  font-size: 0.75rem;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.os-tx-link:hover {
+  text-decoration: underline;
+}
+.os-chart {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem 1rem 0.5rem;
+  margin-bottom: 1.25rem;
+}
+.os-chart__legend {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+.os-chart__swatch {
+  display: inline-block;
+  width: 12px;
+  height: 8px;
+  border-radius: 2px;
+  margin-right: 0.35rem;
+  vertical-align: middle;
+}
+.os-chart__swatch--vol { background: rgba(215, 150, 39, 0.55); }
+.os-chart__swatch--px { background: #10B981; }
+.os-chart__svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.os-chart__empty {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  padding: 1rem 0 1.25rem;
+}

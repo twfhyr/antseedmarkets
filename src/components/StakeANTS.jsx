@@ -72,6 +72,52 @@ const formatTradeAmount = (priceWei, currency) => {
   const formatted = n.toLocaleString(undefined, { maximumFractionDigits: decimals === 6 ? 2 : 6 });
   return label ? `${formatted} ${label}` : formatted;
 };
+const isUsdcTrade = (tr) => normalizeCurrency(tr?.currency) === 'USDC';
+const tradeValueUsdc = (tr) => {
+  if (!isUsdcTrade(tr) || tr.priceWei == null) return null;
+  const n = Number(tr.priceWei) / 1e6;
+  return Number.isFinite(n) ? n : null;
+};
+const tradePricePerAnt = (tr) => {
+  const value = tradeValueUsdc(tr);
+  if (value == null || tr.amount == null || !(tr.amount > 0)) return null;
+  return value / tr.amount;
+};
+const utcDay = (ts) => {
+  const d = new Date(ts);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString().slice(0, 10);
+};
+function buildDailyUsdcStats(trades) {
+  const usable = (trades || []).filter((tr) => tradeValueUsdc(tr) != null && tradePricePerAnt(tr) != null);
+  if (usable.length === 0) return [];
+  const byDay = new Map();
+  for (const tr of usable) {
+    const day = utcDay(tr.createdAt);
+    if (!day) continue;
+    const value = tradeValueUsdc(tr);
+    const px = tradePricePerAnt(tr);
+    const cur = byDay.get(day) || { day, volume: 0, pxSum: 0, n: 0 };
+    cur.volume += value;
+    cur.pxSum += px;
+    cur.n += 1;
+    byDay.set(day, cur);
+  }
+  const days = [...byDay.keys()].sort();
+  const start = new Date(`${days[0]}T00:00:00.000Z`);
+  const end = new Date();
+  end.setUTCHours(0, 0, 0, 0);
+  const out = [];
+  for (let t = start.getTime(); t <= end.getTime(); t += 86400000) {
+    const key = new Date(t).toISOString().slice(0, 10);
+    const row = byDay.get(key);
+    out.push(row
+      ? { day: key, volume: row.volume, avgPrice: row.pxSum / row.n }
+      : { day: key, volume: 0, avgPrice: null });
+  }
+  return out;
+}
+const BASESCAN_TX = (hash) => (hash ? `https://basescan.org/tx/${hash}` : null);
 // An offer row's `weth` field is really just "whatever ERC20 token address
 // this offer's payment item names" (the DB column predates the USDC
 // switch) -- map it back to a symbol for display instead of assuming USDC.
@@ -162,7 +208,7 @@ function StakeANTS() {
   const [marketLoading, setMarketLoading] = useState(true);
   const [marketError, setMarketError] = useState(false);
   const [marketTab, setMarketTab] = useMarketTabRouter(); // 'listed' | 'all' | 'mine' -- URL-driven, see /lants/sales|all|mine
-  const [detailTokenId, openDetail, closeDetail] = useLantsDetailRouter();
+  const [detailTokenId, openDetail, closeDetail, clearDetail] = useLantsDetailRouter();
   const [detailItem, setDetailItem] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState(false);
@@ -192,6 +238,7 @@ function StakeANTS() {
   const [trades, setTrades] = useState(null);
   const [tradesLoading, setTradesLoading] = useState(false);
   const [tradesError, setTradesError] = useState(false);
+  const [statsTrades, setStatsTrades] = useState([]);
 
   // Seller names for the per-card fallback (market items already carry
   // their own sellerName server-side; this only fills the rare gap) and the
@@ -370,10 +417,36 @@ function StakeANTS() {
     return () => { cancelled = true; };
   }, [marketTab, marketPage]);
 
+  useEffect(() => {
+    if (marketTab !== 'history') return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const first = await fetchLantsTrades({ page: 1, pageSize: 100 });
+        let all = first?.trades || [];
+        const total = first?.total || 0;
+        const pages = Math.min(20, Math.ceil(total / 100));
+        for (let p = 2; p <= pages; p += 1) {
+          const next = await fetchLantsTrades({ page: p, pageSize: 100 });
+          all = all.concat(next?.trades || []);
+        }
+        if (!cancelled) setStatsTrades(all);
+      } catch (e) {
+        console.error('Failed to load lANTS trade stats:', e);
+        if (!cancelled) setStatsTrades([]);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [marketTab]);
+
   // Any filter/tab/sort change should snap back to page 1 -- otherwise a
   // narrower result set can leave the view on a now-empty page.
   const resetToFirstPage = (fn) => (...args) => { setMarketPage(1); fn(...args); };
-  const setMarketTabAndReset = resetToFirstPage(setMarketTab);
+  const setMarketTabAndReset = (...args) => {
+    clearDetail();
+    setMarketPage(1);
+    setMarketTab(...args);
+  };
   const setMarketSortAndReset = resetToFirstPage(setMarketSort);
   const setMarketFiltersAndReset = resetToFirstPage(setMarketFilters);
 
@@ -835,11 +908,15 @@ function StakeANTS() {
                   lang={lang}
                 />
               ) : marketTab === 'history' ? (
-                <TradeHistoryPanel
-                  trades={trades} loading={tradesLoading} error={tradesError}
-                  page={marketPage} pageSize={MARKET_PAGE_SIZE} onPageChange={setMarketPage}
-                  t={t} lang={lang}
-                />
+                <>
+                  <DailyActivityChart days={buildDailyUsdcStats(statsTrades)} t={t} />
+                  <TradeHistoryPanel
+                    trades={trades} loading={tradesLoading} error={tradesError}
+                    page={marketPage} pageSize={MARKET_PAGE_SIZE} onPageChange={setMarketPage}
+                    onOpenDetail={openDetail}
+                    t={t} lang={lang}
+                  />
+                </>
               ) : marketTab === 'mine' ? (
               <>
               {/* Kept here (outside any one group) rather than inside
@@ -1210,6 +1287,7 @@ function LantsDetailPanel({ tokenId, item, loading, error, backHref, onBack, car
           page={1}
           pageSize={50}
           onPageChange={() => {}}
+          onOpenDetail={openDetail}
           t={t}
           lang={lang}
         />
@@ -1597,7 +1675,74 @@ function FilterChip({ active, onClick, label, href }) {
   );
 }
 
-function TradeHistoryPanel({ trades, loading, error, page, pageSize, onPageChange, t, lang }) {
+function DailyActivityChart({ days, t }) {
+  if (!days.length) {
+    return (
+      <div className="os-chart">
+        <h4 className="os-activity__title">{t('stake.dailyActivity')}</h4>
+        <p className="os-chart__empty">{t('stake.noUsdcStats')}</p>
+      </div>
+    );
+  }
+  const width = 720;
+  const height = 220;
+  const pad = { l: 48, r: 48, t: 16, b: 36 };
+  const innerW = width - pad.l - pad.r;
+  const innerH = height - pad.t - pad.b;
+  const maxVol = Math.max(...days.map((d) => d.volume), 0);
+  const prices = days.map((d) => d.avgPrice).filter((n) => n != null && Number.isFinite(n));
+  const maxPx = prices.length ? Math.max(...prices) : 0;
+  const minPx = prices.length ? Math.min(...prices) : 0;
+  const pxRange = maxPx - minPx || (maxPx || 1);
+  const n = days.length;
+  const xAt = (i) => pad.l + (n <= 1 ? innerW / 2 : (i / (n - 1)) * innerW);
+  const barW = Math.max(2, innerW / Math.max(n, 1) * 0.62);
+  const volY = (v) => pad.t + innerH - (maxVol > 0 ? (v / maxVol) * innerH * 0.72 : 0);
+  const pxY = (p) => pad.t + innerH - ((p - minPx) / pxRange) * innerH;
+  const linePts = days
+    .map((d, i) => (d.avgPrice == null ? null : `${xAt(i)},${pxY(d.avgPrice)}`))
+    .filter(Boolean)
+    .join(' ');
+  const tickIdx = n <= 6
+    ? days.map((_, i) => i)
+    : [0, Math.floor((n - 1) / 3), Math.floor((2 * (n - 1)) / 3), n - 1];
+  return (
+    <div className="os-chart">
+      <h4 className="os-activity__title">{t('stake.dailyActivity')}</h4>
+      <div className="os-chart__legend">
+        <span className="os-chart__swatch os-chart__swatch--vol" /> {t('stake.dailyVolume')}
+        <span className="os-chart__swatch os-chart__swatch--px" /> {t('stake.dailyPrice')}
+      </div>
+      <svg className="os-chart__svg" viewBox={`0 0 ${width} ${height}`} role="img">
+        {days.map((d, i) => (
+          <rect
+            key={d.day}
+            x={xAt(i) - barW / 2}
+            y={volY(d.volume)}
+            width={barW}
+            height={Math.max(0, pad.t + innerH - volY(d.volume))}
+            fill="rgba(215, 150, 39, 0.35)"
+          />
+        ))}
+        {linePts && (
+          <polyline fill="none" stroke="#10B981" strokeWidth="2" points={linePts} />
+        )}
+        {days.map((d, i) => d.avgPrice == null ? null : (
+          <circle key={`p-${d.day}`} cx={xAt(i)} cy={pxY(d.avgPrice)} r="2.5" fill="#10B981" />
+        ))}
+        {tickIdx.map((i) => (
+          <text key={days[i].day} x={xAt(i)} y={height - 8} textAnchor="middle" fill="rgba(255,255,255,0.55)" fontSize="10">
+            {days[i].day.slice(5)}
+          </text>
+        ))}
+        <text x={8} y={pad.t + 8} fill="rgba(255,255,255,0.45)" fontSize="10">{maxPx ? formatUsd(maxPx) : ''}</text>
+        <text x={width - 8} y={pad.t + 8} textAnchor="end" fill="rgba(215,150,39,0.8)" fontSize="10">{maxVol ? formatUsd(maxVol) : ''}</text>
+      </svg>
+    </div>
+  );
+}
+
+function TradeHistoryPanel({ trades, loading, error, page, pageSize, onPageChange, onOpenDetail, t, lang }) {
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
@@ -1625,7 +1770,7 @@ function TradeHistoryPanel({ trades, loading, error, page, pageSize, onPageChang
   return (
     <>
       <div style={{ overflowX: 'auto' }}>
-        <table className="table" style={{ minWidth: '720px' }}>
+        <table className="table" style={{ minWidth: '840px' }}>
           <thead>
             <tr>
               <th>#</th>
@@ -1633,22 +1778,50 @@ function TradeHistoryPanel({ trades, loading, error, page, pageSize, onPageChang
               <th>{t('stake.tradeSeller')}</th>
               <th>{t('stake.tradeBuyer')}</th>
               <th>{t('stake.tradePrice')}</th>
+              <th>{t('stake.tradeValue')}</th>
               <th>{t('stake.tradeAmount')}</th>
               <th>{t('stake.tradeDate')}</th>
+              <th>{t('stake.tradeTx')}</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((tr) => (
-              <tr key={tr.id}>
-                <td>#{tr.tokenId}</td>
-                <td>{tr.tradeType === 'offer' ? t('stake.tradeOffer') : t('stake.tradeListing')}</td>
-                <td style={{ fontFamily: 'monospace' }}>{truncateAddress(tr.seller)}</td>
-                <td style={{ fontFamily: 'monospace' }}>{truncateAddress(tr.buyer)}</td>
-                <td>{formatTradeAmount(tr.priceWei, tr.currency)}</td>
-                <td>{tr.amount != null ? formatAnts(tr.amount) : '—'}</td>
-                <td>{dateFmt(tr.createdAt, lang)}</td>
-              </tr>
-            ))}
+            {rows.map((tr) => {
+              const perAnt = tradePricePerAnt(tr);
+              const value = tradeValueUsdc(tr);
+              const txUrl = BASESCAN_TX(tr.txHash);
+              return (
+                <tr key={tr.id}>
+                  <td>
+                    <a
+                      href={lantsDetailHref(tr.tokenId)}
+                      className="os-nft-link"
+                      onClick={(e) => {
+                        if (!onOpenDetail) return;
+                        e.preventDefault();
+                        onOpenDetail(tr.tokenId);
+                      }}
+                    >
+                      #{tr.tokenId}
+                    </a>
+                  </td>
+                  <td>{tr.tradeType === 'offer' ? t('stake.tradeOffer') : t('stake.tradeListing')}</td>
+                  <td style={{ fontFamily: 'monospace' }}>{truncateAddress(tr.seller)}</td>
+                  <td style={{ fontFamily: 'monospace' }}>{truncateAddress(tr.buyer)}</td>
+                  <td>{perAnt != null ? `${formatUsd(perAnt)} / ANTS` : '—'}</td>
+                  <td>{value != null ? formatUsd(value) : formatTradeAmount(tr.priceWei, tr.currency)}</td>
+                  <td>{tr.amount != null ? formatAnts(tr.amount) : '—'}</td>
+                  <td>{dateFmt(tr.createdAt, lang)}</td>
+                  <td>
+                    {txUrl ? (
+                      <a href={txUrl} target="_blank" rel="noopener noreferrer" className="os-tx-link">
+                        {truncateAddress(tr.txHash)}
+                        <ExternalLink size={11} />
+                      </a>
+                    ) : '—'}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

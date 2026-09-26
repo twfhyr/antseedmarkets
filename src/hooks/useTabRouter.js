@@ -169,5 +169,9 @@ export function useLantsDetailRouter() {
     }
   }, []);
 
-  return [detailId, openDetail, closeDetail];
+  const clearDetail = useCallback(() => {
+    setDetailId(null);
+  }, []);
+
+  return [detailId, openDetail, closeDetail, clearDetail];
 }
