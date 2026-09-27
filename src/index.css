@@ -1323,6 +1323,32 @@ text-decoration: underline;
 .lants-detail__grid {
   grid-template-columns: minmax(240px, 340px);
 }
+.lants-detail__facts {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+.lants-detail__fact {
+  min-width: 0;
+}
+.lants-detail__fact span {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.2rem;
+}
+.lants-detail__fact strong {
+  display: block;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
 .lants-nft__listbtn {
   background: var(--accent);
   color: #fff;
@@ -1564,6 +1590,35 @@ text-decoration: underline;
   border-bottom-color: var(--text-primary);
   background: transparent;
 }
+.lants-subtabs {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+.lants-stats-panel {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.02);
+  padding: 1rem;
+}
+.lants-stats-panel__header {
+  margin-bottom: 1rem;
+}
+.lants-stats-panel__header h3 {
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+}
+.lants-stats-panel__header p {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+.lants-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+}
 .os-market .lants-nft-grid {
   grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
   gap: 1rem;
@@ -1588,6 +1643,119 @@ text-decoration: underline;
 }
 .os-market .lants-nft__price {
   font-size: 0.95rem;
+}
+.lants-view-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0 0 1rem;
+  padding: 0.2rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.lants-view-toggle button {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: 8px;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.lants-view-toggle button.is-active {
+  background: var(--accent);
+  color: #fff;
+}
+.lants-market-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-secondary);
+}
+.lants-market-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+}
+.lants-market-table th,
+.lants-market-table td {
+  padding: 0.75rem 0.85rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: middle;
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+.lants-market-table th {
+  color: var(--text-secondary);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.68rem;
+}
+.lants-market-table tr:last-child td {
+  border-bottom: none;
+}
+.lants-market-table tr:hover td {
+  background: rgba(16, 185, 129, 0.05);
+}
+.lants-market-table__row {
+  cursor: pointer;
+}
+.lants-market-table__row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.lants-market-table__mono {
+  font-family: var(--font-data);
+  color: var(--text-secondary);
+}
+.lants-market-table__state {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--text-secondary);
+  font-weight: 700;
+  font-size: 0.72rem;
+}
+.lants-market-table__state--active {
+  background: rgba(16, 185, 129, 0.14);
+  color: var(--accent);
+}
+.lants-market-table__state--pending {
+  background: rgba(215, 150, 39, 0.16);
+  color: var(--clay);
+}
+.lants-market-table th:last-child,
+.lants-market-table td:last-child {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  background: var(--card-bg);
+  box-shadow: -10px 0 16px rgba(2, 6, 23, 0.08);
+}
+.lants-market-table th:last-child {
+  z-index: 2;
+}
+.lants-market-table__actions {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.35rem;
+  align-items: center;
+  min-width: max-content;
+}
+.lants-market-table__muted {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+.lants-market-table__error {
+  color: var(--danger);
+  font-size: 0.75rem;
 }
 .os-item .os-item__body {
   display: grid;
