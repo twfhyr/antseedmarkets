@@ -1511,6 +1511,98 @@ text-decoration: underline;
   align-self: end;
 }
 
+.lants-view-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem;
+  margin-bottom: 0.75rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+.lants-view-toggle span {
+  padding: 0 0.45rem;
+}
+.lants-view-toggle button {
+  border: none;
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.lants-view-toggle button.is-active {
+  background: var(--accent);
+  color: #001408;
+}
+
+.lants-market-table-wrap {
+  overflow-x: auto;
+  margin: 0.25rem 0 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-secondary);
+}
+.lants-market-table {
+  min-width: 1320px;
+}
+.lants-market-table th,
+.lants-market-table td {
+  padding: 0.75rem 0.85rem;
+  vertical-align: middle;
+}
+.lants-market-table__owner {
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  color: var(--text-secondary);
+}
+.lants-market-table__status {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.lants-market-table__status--active {
+  background: rgba(16, 185, 129, 0.16);
+  color: #10B981;
+}
+.lants-market-table__status--pending {
+  background: rgba(215, 150, 39, 0.16);
+  color: var(--clay);
+}
+.lants-market-table__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 180px;
+}
+.lants-market-table__actions .lants-nft__listbtn {
+  padding: 0.3rem 0.55rem;
+  font-size: 0.7rem;
+}
+.lants-market-table__muted {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+.lants-market-table__error {
+  color: var(--danger);
+  font-size: 0.75rem;
+}
+.lants-market-table__offers-row td {
+  background: rgba(255, 255, 255, 0.03);
+}
+.lants-market-table__offers {
+  margin-top: 0;
+}
+
 .lants-pager {
   display: flex;
   align-items: center;
