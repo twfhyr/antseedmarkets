@@ -78,12 +78,12 @@ export async function cancelLantsOffer({ offerId, message, signature }) {
  *  fulfillOrder() tx confirms, not before. `seller` is the accepting
  *  (current owner's) wallet, recorded into the trade history. `txHash`
  *  is optional but should be the accept tx's hash when available, so the
- *  History tab's record of this trade carries a real on-chain reference. */
+ *  Activity tab's record of this trade carries a real on-chain reference. */
 export async function acceptLantsOffer(offerId, seller, txHash) {
   return post('/lants/offer/accept', { offerId, seller, txHash });
 }
 
-/** Records a completed listing purchase for the History tab -- call after
+/** Records a completed listing purchase for the Activity tab -- call after
  *  the buyer's fulfillOrder() tx confirms. */
 export async function postLantsTrade(body) {
   return post('/lants/trade', body);
