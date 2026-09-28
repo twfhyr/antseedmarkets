@@ -254,6 +254,12 @@ function StakeANTS({ uiStyle = 'classical' }) {
   const [tradesLoading, setTradesLoading] = useState(false);
   const [tradesError, setTradesError] = useState(false);
   const [statsTrades, setStatsTrades] = useState([]);
+  const [chainCompletion, setChainCompletion] = useState(null);
+
+  const showChainCompletion = useCallback((payload) => {
+    if (!isV2) return;
+    setChainCompletion({ ...payload, shownAt: Date.now() });
+  }, [isV2]);
 
   // Seller names for the per-card fallback (market items already carry
   // their own sellerName server-side; this only fills the rare gap) and the
@@ -495,6 +501,10 @@ function StakeANTS({ uiStyle = 'classical' }) {
         priceUsdc: totalUsdc,
         durationDays: listForm?.days || 30,
       });
+      showChainCompletion({
+        type: 'list',
+        itemId: position.id,
+      });
       // Real bug reported live: the modal used to stay open on a 'done'
       // phase forever (needing a manual close) AND the Mine tab kept
       // showing "List here" afterward, because this never refreshed
@@ -520,7 +530,13 @@ function StakeANTS({ uiStyle = 'classical' }) {
     try {
       setBuyState({ id: position.id, phase: 'buying', message: t('stake.buying') });
       const result = await fulfillListing({ walletClient, account: address, tokenId: position.id });
+      showChainCompletion({
+        type: 'buy',
+        itemId: position.id,
+        txHash: result?.hash,
+      });
       setBuyState({ id: position.id, phase: 'done', message: t('stake.boughtOk') });
+      setBuyState({ id: position.id, phase: 'refreshing', message: t('stake.refreshingAfterTx') });
       if (result?.seller && result?.priceWei) {
         postLantsTrade({
           tokenId: position.id, seller: result.seller, buyer: address,
@@ -550,6 +566,10 @@ function StakeANTS({ uiStyle = 'classical' }) {
       setCancelState({ id: position.id, phase: 'cancelling', message: t('stake.cancelling') });
       await cancelListing({ walletClient, account: address, tokenId: position.id });
       setCancelState({ id: position.id, phase: 'done', message: t('stake.cancelledOk') });
+      showChainCompletion({
+        type: 'cancelListing',
+        itemId: position.id,
+      });
       // Same staleness bug as doList: Mine renders from myPositions, not
       // from `market`, so cancelling a listing needs this too or the card
       // keeps showing "Cancel listing" / the old price after it's gone.
@@ -579,6 +599,10 @@ function StakeANTS({ uiStyle = 'classical' }) {
         positionId: position.id, splitAmountAnts: amount,
       });
       setSplitForm({ position, amount: String(amount), phase: 'done', message: t('stake.splitOk'), result });
+      showChainCompletion({
+        type: 'split',
+        itemId: position.id,
+      });
       // The two new position ids won't be in Antscan's cache yet -- pass
       // them explicitly so the backend fetches them on-chain right now
       // instead of waiting for Antscan to catch up (see /api/lants-market's
@@ -616,6 +640,10 @@ function StakeANTS({ uiStyle = 'classical' }) {
       setMergeState({ ids, phase: 'merging', message: t('stake.merging') });
       const result = await mergePositions({ walletClient, account: address, poolsAddress: poolsAddr, positionIds: ids });
       setMergeState({ ids, phase: 'done', message: t('stake.mergeOk'), result });
+      showChainCompletion({
+        type: 'merge',
+        itemId: result?.newPositionId,
+      });
       setMergeSelected((prev) => {
         const next = new Set(prev);
         ids.forEach((id) => next.delete(id));
@@ -662,6 +690,10 @@ function StakeANTS({ uiStyle = 'classical' }) {
         positionId: position.id, toAgentId,
       });
       setMoveForm({ position, toAgentId, phase: 'done', message: t('stake.moveOk'), result });
+      showChainCompletion({
+        type: 'move',
+        itemId: position.id,
+      });
       const ensureIds = [position.id, result.newPositionId].filter((x) => x != null).join(',');
       // See doMergeSelected's comment: refreshMyPositions is chained after
       // this resolves, not fired in parallel with it, so a sibling position
@@ -693,6 +725,10 @@ function StakeANTS({ uiStyle = 'classical' }) {
       await makeOffer({
         walletClient, account: address, contract, tokenId: position.id,
         priceUsdc: totalUsdc, durationDays: offerForm?.days || 30,
+      });
+      showChainCompletion({
+        type: 'offer',
+        itemId: position.id,
       });
       // Same fix as doList: close on success instead of lingering on a
       // 'done' phase -- the "Offers (N)" count updating on the card is the
@@ -769,8 +805,13 @@ function StakeANTS({ uiStyle = 'classical' }) {
     if (!walletClient || !address) return;
     try {
       setOfferActionState({ offerId: offer.id, phase: 'accepting', message: t('stake.accepting') });
-      await acceptOffer({ walletClient, account: address, offerId: offer.id });
+      const result = await acceptOffer({ walletClient, account: address, offerId: offer.id });
       setOfferActionState({ offerId: offer.id, phase: 'done', message: t('stake.acceptedOk') });
+      showChainCompletion({
+        type: 'acceptOffer',
+        itemId: offer.tokenId,
+        txHash: result?.hash,
+      });
       loadOffers(offer.tokenId, true);
       // The accepting side just sold the position away -- refresh
       // myPositions too, or it keeps showing up as theirs on the Mine tab.
@@ -788,6 +829,10 @@ function StakeANTS({ uiStyle = 'classical' }) {
       setOfferActionState({ offerId: offer.id, phase: 'cancelling', message: t('stake.cancelling') });
       await cancelOffer({ walletClient, account: address, offerId: offer.id });
       setOfferActionState({ offerId: offer.id, phase: 'done', message: t('stake.cancelledOk') });
+      showChainCompletion({
+        type: 'cancelOffer',
+        itemId: offer.tokenId,
+      });
       loadOffers(offer.tokenId, true);
       fetchLantsMarket({ ...marketQuery, wait: '1' }).then(setMarket).catch(() => {});
     } catch (e) {
@@ -1065,9 +1110,41 @@ function StakeANTS({ uiStyle = 'classical' }) {
       <OfferModal form={offerForm} setForm={setOfferForm} onConfirm={doMakeOffer} t={t} />
       <SplitModal form={splitForm} setForm={setSplitForm} onConfirm={doSplit} t={t} />
       <MoveModal form={moveForm} setForm={setMoveForm} onConfirm={doMove} sellers={sellers} t={t} />
+      {isV2 && <V2ChainCompletionPopup
+        completion={chainCompletion}
+        onClose={() => setChainCompletion(null)}
+        t={t}
+      />}
       </div>
       {isV2 && <AntseedV2How />}
     </>
+  );
+}
+
+function V2ChainCompletionPopup({ completion, onClose, t }) {
+  if (!completion) return null;
+  const isBuy = completion.type === 'buy';
+  const itemLabel = completion.itemId != null ? t('stake.txCompleteItem', { id: completion.itemId }) : null;
+  return (
+    <div className="v2-chain-popup" role="dialog" aria-modal="true" aria-label={t('stake.txCompleteTitle')}>
+      <div className="v2-chain-popup__card">
+        <button type="button" className="v2-chain-popup__close" onClick={onClose} aria-label={t('stake.txCompleteClose')}>
+          <X size={16} />
+        </button>
+        <div className="v2-chain-popup__flowers" aria-hidden="true">✿ ✽ ❀</div>
+        <div className="v2-chain-popup__ants" aria-hidden="true">🐜 🐜 🐜</div>
+        <p className="v2-chain-popup__eyebrow">{t('stake.txCompleteTitle')}</p>
+        <h2>{isBuy ? t('stake.txCongrats') : t('stake.txCompleteGeneric')}</h2>
+        <p>{isBuy ? t('stake.txBuyCompleteBody') : t('stake.txCompleteBody')}</p>
+        {itemLabel && <strong>{itemLabel}</strong>}
+        {completion.txHash && (
+          <a href={BASESCAN_TX(completion.txHash)} target="_blank" rel="noopener noreferrer">
+            {t('stake.verifyOnBasescan')} <ExternalLink size={13} />
+          </a>
+        )}
+        <button type="button" className="v2-chain-popup__done" onClick={onClose}>{t('stake.txCompleteClose')}</button>
+      </div>
+    </div>
   );
 }
 

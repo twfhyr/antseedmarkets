@@ -2476,6 +2476,116 @@ html[data-ui-style="v2"] body {
   color: #293127;
 }
 
+.v2-chain-popup {
+  display: none;
+}
+
+.dashboard[data-ui-style="v2"] .v2-chain-popup {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(41, 49, 39, 0.22);
+  backdrop-filter: blur(10px);
+}
+
+.v2-chain-popup__card {
+  position: relative;
+  width: min(440px, 100%);
+  overflow: hidden;
+  border: 1px solid #dcded1;
+  background: #fbfaf5;
+  color: #293127;
+  padding: 34px;
+  box-shadow: 0 24px 70px rgba(41, 49, 39, 0.24);
+}
+
+.v2-chain-popup__card::before {
+  content: '';
+  position: absolute;
+  inset: 13px;
+  border: 1px solid rgba(201, 68, 40, 0.2);
+  pointer-events: none;
+}
+
+.v2-chain-popup__close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  border: 0;
+  background: transparent;
+  color: #687064;
+  z-index: 1;
+}
+
+.v2-chain-popup__flowers {
+  color: #c94428;
+  font-size: 38px;
+  letter-spacing: 12px;
+  margin-bottom: 20px;
+}
+
+.v2-chain-popup__ants {
+  position: absolute;
+  right: 30px;
+  bottom: 25px;
+  font-size: 18px;
+  letter-spacing: 8px;
+  opacity: 0.52;
+}
+
+.v2-chain-popup__eyebrow {
+  color: #687064;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  margin: 0 0 12px;
+  text-transform: uppercase;
+}
+
+.v2-chain-popup h2 {
+  font-family: 'Libre Caslon Display', Georgia, serif;
+  font-size: clamp(42px, 7vw, 68px);
+  font-weight: 400;
+  line-height: 0.95;
+  letter-spacing: -1.8px;
+  margin: 0 0 18px;
+}
+
+.v2-chain-popup p {
+  color: #687064;
+  line-height: 1.7;
+  margin: 0 0 16px;
+}
+
+.v2-chain-popup strong {
+  display: block;
+  color: #c94428;
+  font-family: var(--font-data);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  margin-bottom: 16px;
+}
+
+.v2-chain-popup a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #c94428;
+  font-size: 12px;
+  margin-right: 16px;
+  text-decoration: none;
+}
+
+.v2-chain-popup__done {
+  border: 1px solid #293127;
+  background: #293127;
+  color: #fbfaf5;
+  font-size: 12px;
+  padding: 11px 18px;
+}
+
 @media (max-width: 950px) {
   .dashboard[data-ui-style="v2"] .v2-announcement span { display: none; }
   .dashboard[data-ui-style="v2"] .wrap,
