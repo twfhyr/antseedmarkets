@@ -2498,6 +2498,18 @@ html[data-ui-style="v2"] body {
   opacity: 0.72;
 }
 
+.v2-position-button__message {
+  flex-basis: 100%;
+  margin-top: 8px;
+  color: #687064;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.v2-position-button__message--error {
+  color: #c94428;
+}
+
 .dashboard[data-ui-style="v2"] .lants-market-table-wrap,
 .dashboard[data-ui-style="v2"] .os-chart,
 .dashboard[data-ui-style="v2"] .lants-stats-panel,
@@ -2690,6 +2702,166 @@ html[data-ui-style="v2"] body {
   padding: 11px 18px;
   cursor: pointer;
   touch-action: manipulation;
+}
+
+.buy-prep-lock {
+  /* Capture the whole page while Seaport prepares the wallet action. */
+  position: fixed;
+  inset: 0;
+  z-index: 1250;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  pointer-events: auto;
+  background: rgba(12, 15, 18, 0.36);
+  backdrop-filter: blur(4px);
+  cursor: progress;
+}
+
+.buy-prep-lock__card {
+  min-width: min(320px, 100%);
+  max-width: 420px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: var(--surface-elevated, #15191d);
+  color: var(--text-primary, #f7f7f2);
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  padding: 28px;
+  text-align: center;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
+}
+
+.dashboard[data-ui-style="v2"] .buy-prep-lock__card {
+  border-color: #dcded1;
+  background: #fbfaf5;
+  color: #293127;
+}
+
+.buy-prep-lock__spinner {
+  color: var(--accent, #d79627);
+}
+
+.buy-prep-lock__card strong {
+  font-size: 15px;
+}
+
+.buy-prep-lock__card p {
+  color: var(--text-secondary, #b6c2bd);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.dashboard[data-ui-style="v2"] .buy-prep-lock__card p {
+  color: #687064;
+}
+
+.buy-error-popup {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(12, 15, 18, 0.58);
+  backdrop-filter: blur(8px);
+}
+
+.buy-error-popup__card {
+  position: relative;
+  width: min(460px, 100%);
+  overflow: hidden;
+  border: 1px solid rgba(255, 110, 74, 0.28);
+  background: var(--surface-elevated, #15191d);
+  color: var(--text-primary, #f7f7f2);
+  padding: 30px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
+}
+
+.dashboard[data-ui-style="v2"] .buy-error-popup__card {
+  border-color: #dcded1;
+  background: #fbfaf5;
+  color: #293127;
+}
+
+.buy-error-popup__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  opacity: 0.7;
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.buy-error-popup__eyebrow {
+  color: var(--danger, #ff6e4a);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  margin: 0 0 12px;
+  text-transform: uppercase;
+}
+
+.buy-error-popup h2 {
+  margin: 0 0 14px;
+  font-size: clamp(30px, 6vw, 48px);
+  line-height: 1;
+}
+
+.buy-error-popup p {
+  color: var(--text-secondary, #b6c2bd);
+  line-height: 1.6;
+  margin: 0 0 14px;
+}
+
+.dashboard[data-ui-style="v2"] .buy-error-popup p {
+  color: #687064;
+}
+
+.buy-error-popup strong {
+  display: block;
+  color: var(--danger, #ff6e4a);
+  font-family: var(--font-data);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  margin-bottom: 14px;
+}
+
+.buy-error-popup__message {
+  max-height: 180px;
+  overflow: auto;
+  border: 1px solid rgba(255, 110, 74, 0.22);
+  background: rgba(255, 110, 74, 0.08);
+  color: inherit;
+  font: 12px/1.45 var(--font-data, monospace);
+  margin: 0 0 18px;
+  padding: 12px;
+  white-space: pre-wrap;
+}
+
+.buy-error-popup__done {
+  border: 1px solid var(--danger, #ff6e4a);
+  background: var(--danger, #ff6e4a);
+  color: #fff;
+  font-size: 12px;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 11px 18px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.dashboard[data-ui-style="v2"] .buy-error-popup__done {
+  border-color: #293127;
+  background: #293127;
+  color: #fbfaf5;
 }
 
 @media (max-width: 950px) {

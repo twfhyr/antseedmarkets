@@ -255,11 +255,20 @@ function StakeANTS({ uiStyle = 'classical' }) {
   const [tradesError, setTradesError] = useState(false);
   const [statsTrades, setStatsTrades] = useState([]);
   const [chainCompletion, setChainCompletion] = useState(null);
+  const [buyErrorPopup, setBuyErrorPopup] = useState(null);
 
   const showChainCompletion = useCallback((payload) => {
     if (!isV2) return;
     setChainCompletion({ ...payload, shownAt: Date.now() });
   }, [isV2]);
+
+  const showBuyErrorPopup = useCallback((position, message) => {
+    setBuyErrorPopup({
+      itemId: position?.id,
+      message,
+      shownAt: Date.now(),
+    });
+  }, []);
 
   // Seller names for the per-card fallback (market items already carry
   // their own sellerName server-side; this only fills the rare gap) and the
@@ -537,7 +546,9 @@ function StakeANTS({ uiStyle = 'classical' }) {
 
   const doBuy = async (position) => {
     if (!walletClient || !address) {
-      setBuyState({ id: position.id, phase: 'error', message: t('stake.buyNeedWallet') });
+      const message = t('stake.buyNeedWallet');
+      setBuyState({ id: position.id, phase: 'error', message });
+      showBuyErrorPopup(position, message);
       return;
     }
     try {
@@ -566,7 +577,9 @@ function StakeANTS({ uiStyle = 'classical' }) {
         .then((data) => { setMarket(data); return refreshMyPositions(); })
         .catch(() => refreshMyPositions({ force: true }));
     } catch (e) {
-      setBuyState({ id: position.id, phase: 'error', message: e.shortMessage || e.message });
+      const message = e.shortMessage || e.message;
+      setBuyState({ id: position.id, phase: 'error', message });
+      showBuyErrorPopup(position, message);
     }
   };
 
@@ -894,6 +907,10 @@ function StakeANTS({ uiStyle = 'classical' }) {
     canMove: !!(isConnected && address && p.owner && address.toLowerCase() === p.owner.toLowerCase() && !p.listed && !isProviderActivationStake(p.amount)),
   });
 
+  // Seaport needs to fetch/prepare the order before the wallet can prompt, so
+  // block the page immediately after Buy to prevent duplicate clicks in that gap.
+  const isBuyBlockingPage = buyState?.phase === 'buying';
+
   return (
     <>
       {isV2 && <AntseedV2Hero market={market} onExplore={() => setMarketTabAndReset('listed')} />}
@@ -1129,9 +1146,52 @@ function StakeANTS({ uiStyle = 'classical' }) {
         onClose={() => setChainCompletion(null)}
         t={t}
       />}
+      <BuyErrorPopup
+        error={buyErrorPopup}
+        onClose={() => setBuyErrorPopup(null)}
+        t={t}
+      />
+      <BuyPreparationLock
+        active={isBuyBlockingPage}
+        message={buyState?.message}
+        t={t}
+      />
       </div>
       {isV2 && <AntseedV2How />}
     </>
+  );
+}
+
+function BuyPreparationLock({ active, message, t }) {
+  if (!active) return null;
+  return (
+    <div className="buy-prep-lock" role="status" aria-live="assertive" aria-label={t('stake.buyPreparingWallet')}>
+      <div className="buy-prep-lock__card">
+        <Loader2 size={22} className="buy-prep-lock__spinner spin" />
+        <strong>{t('stake.buyPreparingWallet')}</strong>
+        <p>{message || t('stake.buyPreparingWallet')}</p>
+      </div>
+    </div>
+  );
+}
+
+function BuyErrorPopup({ error, onClose, t }) {
+  if (!error) return null;
+  const itemLabel = error.itemId != null ? t('stake.txCompleteItem', { id: error.itemId }) : null;
+  return (
+    <div className="buy-error-popup" role="dialog" aria-modal="true" aria-label={t('stake.buyErrorTitle')}>
+      <div className="buy-error-popup__card">
+        <button type="button" className="buy-error-popup__close" onClick={onClose} aria-label={t('stake.buyErrorClose')}>
+          <X size={16} />
+        </button>
+        <p className="buy-error-popup__eyebrow">{t('stake.buyErrorTitle')}</p>
+        <h2>{t('stake.buyErrorTitle')}</h2>
+        <p>{t('stake.buyErrorBody')}</p>
+        {itemLabel && <strong>{itemLabel}</strong>}
+        {error.message && <pre className="buy-error-popup__message">{error.message}</pre>}
+        <button type="button" className="buy-error-popup__done" onClick={onClose}>{t('stake.buyErrorClose')}</button>
+      </div>
+    </div>
   );
 }
 
@@ -1268,6 +1328,11 @@ function LantsV2Card({
           {canOffer && <button type="button" className="v2-position-button" onClick={() => onOpenOffer?.(p)}>{t('stake.makeOffer')} <span>↗</span></button>}
           {detailHref && <a href={detailHref} className="v2-position-button" onClick={open}>{t('stake.viewDetails')} <span>↗</span></a>}
         </div>
+        {buyState?.message && buyState.phase !== 'error' && (
+          <div className="v2-position-button__message">
+            {buyState.message}
+          </div>
+        )}
       </div>
     </article>
   );
@@ -1379,8 +1444,8 @@ function LantsMarketTable({ items, market, cardProps, onOpenDetail, t, lang }) {
                       </button>
                     )}
                     {!props.canBuy && !props.canOffer && <span className="lants-market-table__muted">—</span>}
-                    {props.buyState?.message && (
-                      <span className={props.buyState.phase === 'error' ? 'lants-market-table__error' : 'lants-market-table__muted'}>
+                    {props.buyState?.message && props.buyState.phase !== 'error' && (
+                      <span className="lants-market-table__muted">
                         {props.buyState.message}
                       </span>
                     )}
@@ -1512,8 +1577,8 @@ function LantsNftCard({
             {cancelState.message}
           </div>
         )}
-        {buyState?.message && (
-          <div style={{ color: buyState.phase === 'error' ? 'var(--danger)' : 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.25rem' }}>
+        {buyState?.message && buyState.phase !== 'error' && (
+          <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.25rem' }}>
             {buyState.message}
           </div>
         )}
