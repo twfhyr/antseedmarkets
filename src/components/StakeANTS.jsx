@@ -119,6 +119,25 @@ function buildDailyUsdcStats(trades) {
   return out;
 }
 const BASESCAN_TX = (hash) => (hash ? `https://basescan.org/tx/${hash}` : null);
+// Seaport/wallet errors come through as raw revert reasons or provider
+// messages ("The fulfiller does not have the balances needed to fulfill
+// under the offers.") that don't say what to actually do about it -- map
+// the common, recognizable ones to plain language. `context` picks the
+// right phrasing for who's short on funds: the clicking wallet (buying),
+// or the offer's original maker, whose balance can drop after they signed
+// it (accepting).
+function humanizeTxError(rawMessage, context, t) {
+  const msg = String(rawMessage || '');
+  if (/does not have the balances needed to fulfill|insufficient.*(allowance|balance)|transfer amount exceeds balance/i.test(msg)) {
+    if (context === 'accept') return t('stake.txErrorInsufficientBalanceAccept');
+    if (context === 'offer') return t('stake.txErrorInsufficientBalanceOffer');
+    return t('stake.txErrorInsufficientBalanceBuy');
+  }
+  if (/user rejected|user denied|ACTION_REJECTED/i.test(msg)) {
+    return t('stake.txErrorRejected');
+  }
+  return msg || t('stake.txErrorGeneric');
+}
 // An offer row's `weth` field is really just "whatever ERC20 token address
 // this offer's payment item names" (the DB column predates the USDC
 // switch) -- map it back to a symbol for display instead of assuming USDC.
@@ -244,6 +263,11 @@ function StakeANTS() {
   // A completed buy/offer/accept pops this up so people know their onchain
   // action really went through -- { type: 'buy'|'offer'|'accept', itemId, hash }.
   const [dealPopup, setDealPopup] = useState(null);
+  // A failed buy/accept pops this up too -- the inline message next to the
+  // button is easy to miss, and "the fulfiller does not have the balances
+  // needed to fulfill" means nothing to someone who isn't reading Seaport's
+  // source. { message } already holds the humanized text.
+  const [txErrorPopup, setTxErrorPopup] = useState(null);
   const [splitForm, setSplitForm] = useState(null); // { id, amount, phase, message, result }
   const [mergeSelected, setMergeSelected] = useState(() => new Set()); // position ids checked for merging, across all groups
   const [mergeState, setMergeState] = useState(null); // { ids, phase, message, result } -- last merge action's status
@@ -553,7 +577,9 @@ function StakeANTS() {
         .then((data) => { setMarket(data); return refreshMyPositions(); })
         .catch(() => refreshMyPositions({ force: true }));
     } catch (e) {
-      setBuyState({ id: position.id, phase: 'error', message: e.shortMessage || e.message });
+      const friendly = humanizeTxError(e.shortMessage || e.message, 'buy', t);
+      setBuyState({ id: position.id, phase: 'error', message: friendly });
+      setTxErrorPopup({ message: friendly });
     }
   };
 
@@ -721,7 +747,7 @@ function StakeANTS() {
       loadOffers(position.id, true);
       fetchLantsMarket({ ...marketQuery, wait: '1' }).then(setMarket).catch(() => {});
     } catch (e) {
-      setOfferForm((f) => ({ ...f, phase: 'error', message: e.shortMessage || e.message }));
+      setOfferForm((f) => ({ ...f, phase: 'error', message: humanizeTxError(e.shortMessage || e.message, 'offer', t) }));
     }
   };
 
@@ -796,7 +822,9 @@ function StakeANTS() {
         .then((data) => { setMarket(data); return refreshMyPositions(); })
         .catch(() => refreshMyPositions({ force: true }));
     } catch (e) {
-      setOfferActionState({ offerId: offer.id, phase: 'error', message: e.shortMessage || e.message });
+      const friendly = humanizeTxError(e.shortMessage || e.message, 'accept', t);
+      setOfferActionState({ offerId: offer.id, phase: 'error', message: friendly });
+      setTxErrorPopup({ message: friendly });
     }
   };
 
@@ -1088,6 +1116,7 @@ function StakeANTS() {
       <MoveModal form={moveForm} setForm={setMoveForm} onConfirm={doMove} sellers={sellers} t={t} />
       <WalletBusyOverlay message={walletBusyMessage} t={t} />
       <DealDonePopup popup={dealPopup} onClose={() => setDealPopup(null)} t={t} />
+      <TxErrorPopup popup={txErrorPopup} onClose={() => setTxErrorPopup(null)} t={t} />
     </div>
   );
 }
@@ -1136,6 +1165,27 @@ function DealDonePopup({ popup, onClose, t }) {
               <ExternalLink size={12} />
             </a>
           )}
+          <button type="button" className="deal-done-popup__done" onClick={onClose}>{t('stake.dealDoneClose')}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TxErrorPopup({ popup, onClose, t }) {
+  if (!popup) return null;
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content deal-done-popup" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>{t('stake.txErrorTitle')}</h2>
+          <button type="button" className="modal-close" onClick={onClose} aria-label={t('stake.dealDoneClose')}>
+            <X size={18} />
+          </button>
+        </div>
+        <div className="modal-body deal-done-popup__body">
+          <AlertCircle size={40} className="tx-error-popup__icon" />
+          <p>{popup.message}</p>
           <button type="button" className="deal-done-popup__done" onClick={onClose}>{t('stake.dealDoneClose')}</button>
         </div>
       </div>
