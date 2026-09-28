@@ -221,6 +221,7 @@ function StakeANTS() {
   // (paginateMarketItems's 'price' sorter keys off listing.perAntUsd, never
   // the total listed price -- see docs/ARCHITECTURE.md).
   const [marketSort, setMarketSort] = useState('price');
+  const [nftView, setNftView] = useState('cards');
   const [marketFilters, setMarketFilters] = useState({ agentId: '', minAmount: '', maxAmount: '', minLockDays: '', maxLockDays: '' });
   const [filterDraft, setFilterDraft] = useState(marketFilters);
   const MARKET_PAGE_SIZE = 10;
@@ -959,6 +960,7 @@ function StakeANTS() {
               </>
               ) : (
               <>
+              <ViewToggle view={nftView} onChange={setNftView} t={t} />
               <div className="lants-filters">
                 <label>
                   {t('stake.filterSeller')}
@@ -1011,11 +1013,23 @@ function StakeANTS() {
                 </div>
               )}
               {marketItems.length > 0 && (
-                <div className="lants-nft-grid">
-                  {marketItems.map((p) => (
-                    <LantsNftCard key={`m-${p.id}`} position={p} {...commonCardProps(p)} />
-                  ))}
-                </div>
+                nftView === 'table' ? (
+                  <LantsMarketTable
+                    items={marketItems}
+                    getProps={commonCardProps}
+                    currentEpoch={market?.currentEpoch}
+                    genesis={market?.genesis}
+                    epochDuration={market?.epochDuration}
+                    t={t}
+                    lang={lang}
+                  />
+                ) : (
+                  <div className="lants-nft-grid">
+                    {marketItems.map((p) => (
+                      <LantsNftCard key={`m-${p.id}`} position={p} {...commonCardProps(p)} />
+                    ))}
+                  </div>
+                )
               )}
               {market.total > MARKET_PAGE_SIZE && (
                 <MarketPager
@@ -1037,6 +1051,204 @@ function StakeANTS() {
       <OfferModal form={offerForm} setForm={setOfferForm} onConfirm={doMakeOffer} t={t} />
       <SplitModal form={splitForm} setForm={setSplitForm} onConfirm={doSplit} t={t} />
       <MoveModal form={moveForm} setForm={setMoveForm} onConfirm={doMove} sellers={sellers} t={t} />
+    </div>
+  );
+}
+
+function ViewToggle({ view, onChange, t }) {
+  return (
+    <div className="lants-view-toggle" aria-label={t('stake.viewMode')}>
+      <span>{t('stake.viewMode')}</span>
+      <button
+        type="button"
+        className={view === 'cards' ? 'is-active' : ''}
+        onClick={() => onChange('cards')}
+      >
+        {t('stake.viewCards')}
+      </button>
+      <button
+        type="button"
+        className={view === 'table' ? 'is-active' : ''}
+        onClick={() => onChange('table')}
+      >
+        {t('stake.viewTable')}
+      </button>
+    </div>
+  );
+}
+
+function LantsMarketTable({ items, getProps, currentEpoch, genesis, epochDuration, t, lang }) {
+  return (
+    <div className="lants-market-table-wrap">
+      <table className="table lants-market-table">
+        <thead>
+          <tr>
+            <th>{t('stake.tableItemId')}</th>
+            <th>{t('stake.tradeAmount')}</th>
+            <th>{t('stake.tableListPrice')}</th>
+            <th>{t('stake.tableValue')}</th>
+            <th>{t('stake.tableBeginDate')}</th>
+            <th>{t('stake.tableEndDate')}</th>
+            <th>{t('stake.tableLockedTime')}</th>
+            <th>{t('stake.tableStakeTo')}</th>
+            <th>{t('stake.tableStatus')}</th>
+            <th>{t('stake.impliedMc')}</th>
+            <th>{t('stake.impliedFdv')}</th>
+            <th>{t('stake.owner')}</th>
+            <th>{t('stake.tableActions')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((p) => {
+            const props = getProps(p);
+            const dates = epochDates(p.stakeStartEpoch, p.stakeEndEpoch, genesis, epochDuration);
+            const lockDays = p.lockDays ?? dates.lockDays;
+            const state = (p.stakeStartEpoch != null && p.stakeEndEpoch != null) ? positionState(p, currentEpoch) : null;
+            const sellerName = props.seller?.name || (p.agentId != null ? t('stake.agent', { id: p.agentId }) : '—');
+            const perAnt = p.listing?.perAntUsd != null ? `${formatUsd(p.listing.perAntUsd)} / ANTS` : '—';
+            const value = p.listing ? formatListing(p.listing) : '—';
+            const lockLabel = lockDays != null ? t('stake.lockedForDays', { n: lockDays }) : '—';
+            const stateLabel = state ? t(`stake.state.${state}`) : '—';
+            return (
+              <React.Fragment key={`row-${p.id}`}>
+                <tr>
+                  <td>
+                    <a
+                      href={props.detailHref}
+                      className="os-nft-link"
+                      onClick={(e) => {
+                        if (!props.onOpenDetail) return;
+                        e.preventDefault();
+                        props.onOpenDetail();
+                      }}
+                    >
+                      #{p.id}
+                    </a>
+                  </td>
+                  <td>{formatAnts(p.amount)}</td>
+                  <td>{perAnt}</td>
+                  <td>{value}</td>
+                  <td>{dateFmt(p.startDate ?? dates.startDate, lang)}</td>
+                  <td>{dateFmt(p.endDate ?? dates.endDate, lang)}</td>
+                  <td>{lockLabel}</td>
+                  <td>{sellerName}</td>
+                  <td><span className={`lants-market-table__status lants-market-table__status--${state || 'unknown'}`}>{stateLabel}</span></td>
+                  <td>{p.listing?.mcUsd != null ? formatUsdCompact(p.listing.mcUsd) : '—'}</td>
+                  <td>{p.listing?.fdvUsd != null ? formatUsdCompact(p.listing.fdvUsd) : '—'}</td>
+                  <td className="lants-market-table__owner">{p.owner ? truncateAddress(p.owner) : '—'}</td>
+                  <td>
+                    <LantsTableActions position={p} {...props} t={t} />
+                  </td>
+                </tr>
+                {props.offersOpen && (
+                  <tr className="lants-market-table__offers-row">
+                    <td colSpan={13}>
+                      <LantsOffersInline position={p} {...props} t={t} />
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function LantsTableActions({
+  position: p, setListForm, canList, onBuy, canBuy, buyState, isOwner, address,
+  onCancel, cancelState, onOpenOffer, canOffer, onToggleOffers, t,
+}) {
+  const cancelBusy = cancelState?.id === p.id && cancelState?.phase === 'cancelling';
+  const canCancel = isOwner && p.listed && p.fulfillableHere;
+  const hasAction = canList || canCancel || canBuy || canOffer || onToggleOffers;
+  if (!hasAction) return <span className="lants-market-table__muted">{t('stake.tableNoActions')}</span>;
+  return (
+    <div className="lants-market-table__actions">
+      {canList && setListForm && (
+        <button
+          type="button"
+          className="lants-nft__listbtn"
+          onClick={() => setListForm({ position: p, price: '', days: 30, phase: null, message: null })}
+        >
+          {t('stake.listOnSite')}
+        </button>
+      )}
+      {canCancel && onCancel && (
+        <button
+          type="button"
+          className="lants-nft__listbtn lants-nft__listbtn--danger"
+          onClick={() => onCancel(p)}
+          disabled={cancelBusy}
+        >
+          {cancelBusy ? <Loader2 size={12} className="spin" /> : null}
+          {t('stake.cancelListing')}
+        </button>
+      )}
+      {canBuy && onBuy && (
+        <button
+          type="button"
+          className="lants-nft__listbtn"
+          onClick={onBuy}
+          disabled={buyState?.phase === 'buying'}
+        >
+          {buyState?.phase === 'buying' ? <Loader2 size={12} className="spin" /> : null}
+          {t('stake.buyOnSite')}
+        </button>
+      )}
+      {canOffer && onOpenOffer && (
+        <button type="button" className="lants-nft__listbtn" onClick={() => onOpenOffer(p)}>
+          {t('stake.makeOffer')}
+        </button>
+      )}
+      {onToggleOffers && (
+        <button type="button" className="lants-nft__listbtn" onClick={() => onToggleOffers(p.id)}>
+          {t('stake.viewOffers', { n: p.offerCount || 0 })}
+        </button>
+      )}
+      {cancelState?.id === p.id && cancelState.message && (
+        <span className={cancelState.phase === 'error' ? 'lants-market-table__error' : 'lants-market-table__muted'}>{cancelState.message}</span>
+      )}
+      {buyState?.message && (
+        <span className={buyState.phase === 'error' ? 'lants-market-table__error' : 'lants-market-table__muted'}>{buyState.message}</span>
+      )}
+    </div>
+  );
+}
+
+function LantsOffersInline({ position: p, offers, isOwner, address, onAcceptOffer, onCancelOffer, offerActionState, t }) {
+  if (offers?.loading) return <div className="lants-nft__offers-empty">{t('stake.loadingOffers')}</div>;
+  if (offers?.error) return <div className="lants-nft__offers-empty">{offers.error}</div>;
+  if (!offers?.items?.length) return <div className="lants-nft__offers-empty">{t('stake.noOffers')}</div>;
+  return (
+    <div className="lants-nft__offers lants-market-table__offers">
+      {offers.items.map((o) => {
+        const mine = address && o.offerer?.toLowerCase() === address.toLowerCase();
+        const busy = offerActionState?.offerId === o.id && ['accepting', 'cancelling'].includes(offerActionState.phase);
+        return (
+          <div key={o.id} className="lants-nft__offer-row">
+            <span>{formatTradeAmount(o.priceWei, currencyForToken(o.weth))}</span>
+            <span className="lants-nft__offer-addr">{truncateAddress(o.offerer)}</span>
+            {isOwner && onAcceptOffer && (
+              <button type="button" onClick={() => onAcceptOffer(o)} disabled={busy}>
+                {busy ? <Loader2 size={11} className="spin" /> : null}{t('stake.acceptOffer')}
+              </button>
+            )}
+            {mine && !isOwner && onCancelOffer && (
+              <button type="button" onClick={() => onCancelOffer(o)} disabled={busy}>
+                {busy ? <Loader2 size={11} className="spin" /> : null}{t('stake.cancelOffer')}
+              </button>
+            )}
+            {offerActionState?.offerId === o.id && offerActionState.message && (
+              <div className="lants-nft__offer-msg" style={{ color: offerActionState.phase === 'error' ? 'var(--danger)' : 'var(--text-secondary)' }}>
+                {offerActionState.message}
+              </div>
+            )}
+          </div>
+        );
+      })}
+      <span className="lants-market-table__muted">#{p.id}</span>
     </div>
   );
 }
