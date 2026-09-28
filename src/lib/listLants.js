@@ -10,6 +10,49 @@
 
 const DEFAULT_CONDUIT_KEY = `0x${'0'.repeat(64)}`;
 const SEAPORT_V16 = '0x0000000000000068F116a894984e2DB1123eB395';
+const ORDER_PREWARM_TTL_MS = 10_000;
+
+let fulfillmentDepsPromise = null;
+const lantsOrderCache = new Map();
+
+const loadFulfillmentDeps = () => {
+  if (!fulfillmentDepsPromise) {
+    fulfillmentDepsPromise = Promise.all([
+      import('@opensea/seaport-js'),
+      import('ethers'),
+    ]).catch((err) => {
+      fulfillmentDepsPromise = null;
+      throw err;
+    });
+  }
+  return fulfillmentDepsPromise;
+};
+
+const getCachedLantsOrder = (tokenId) => {
+  const id = String(tokenId);
+  const now = Date.now();
+  const cached = lantsOrderCache.get(id);
+  if (cached && now - cached.loadedAt < ORDER_PREWARM_TTL_MS) return cached.promise;
+  const promise = import('../api.js')
+    .then(({ fetchLantsOrder }) => fetchLantsOrder(id))
+    .catch((err) => {
+      lantsOrderCache.delete(id);
+      throw err;
+    });
+  lantsOrderCache.set(id, { loadedAt: now, promise });
+  return promise;
+};
+
+export function prewarmListingFulfillment(tokenIds) {
+  const ids = (Array.isArray(tokenIds) ? tokenIds : [tokenIds])
+    .filter((id) => id !== null && id !== undefined && id !== '')
+    .map((id) => String(id));
+  if (!ids.length) return;
+  loadFulfillmentDeps().catch(() => {});
+  [...new Set(ids)].slice(0, 20).forEach((id) => {
+    getCachedLantsOrder(id).catch(() => {});
+  });
+}
 
 // Canonical Base USDC (Circle's native issuance, not bridged USDbC) --
 // same address already used elsewhere in this app for real payments (see
@@ -132,12 +175,8 @@ export async function createAndPostListing({ walletClient, account, contract, to
  * mechanism that already handled WETH offer-acceptance below.
  */
 export async function fulfillListing({ walletClient, account, tokenId }) {
-  const [{ Seaport }, { BrowserProvider }, { fetchLantsOrder }] = await Promise.all([
-    import('@opensea/seaport-js'),
-    import('ethers'),
-    import('../api.js'),
-  ]);
-  const stored = await fetchLantsOrder(tokenId);
+  const [{ Seaport }, { BrowserProvider }] = await loadFulfillmentDeps();
+  const stored = await getCachedLantsOrder(tokenId);
   const network = { chainId: walletClient.chain.id, name: walletClient.chain.name };
   const provider = new BrowserProvider(walletClient.transport, network);
   const seaport = new Seaport(provider);

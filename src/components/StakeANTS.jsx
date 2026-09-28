@@ -13,7 +13,7 @@ import { fetchSellers, fetchLantsMarket, fetchLantsOffers, postLantsTrade, fetch
 import { useI18n } from '../i18n/index.jsx';
 import { useMarketTabRouter, marketTabHref, useLantsDetailRouter, lantsDetailHref } from '../hooks/useTabRouter';
 import {
-  createAndPostListing, fulfillListing, cancelListing, makeOffer, cancelOffer, acceptOffer,
+  createAndPostListing, fulfillListing, prewarmListingFulfillment, cancelListing, makeOffer, cancelOffer, acceptOffer,
   splitPosition, mergePositions, movePosition, isProviderActivationStake,
   USDC_BASE, WETH_BASE,
 } from '../lib/listLants';
@@ -476,6 +476,19 @@ function StakeANTS({ uiStyle = 'classical' }) {
   // is already exactly the page to show.
   const marketItems = market?.items || [];
 
+  const prewarmBuy = useCallback((position) => {
+    if (!position?.id || !position.listed || !position.fulfillableHere) return;
+    prewarmListingFulfillment(position.id);
+  }, []);
+
+  useEffect(() => {
+    if (!isConnected || !address || !marketItems.length) return;
+    const buyableIds = marketItems
+      .filter((position) => shouldShowMarketBuyAction({ position, connected: isConnected, address }))
+      .map((position) => position.id);
+    prewarmListingFulfillment(buyableIds);
+  }, [marketItems, isConnected, address]);
+
   const doList = async (position) => {
     const contract = market?.contract;
     if (!walletClient || !address || !contract) {
@@ -858,6 +871,7 @@ function StakeANTS({ uiStyle = 'classical' }) {
     setListForm,
     canList: !!(isConnected && address && p.owner && address.toLowerCase() === p.owner.toLowerCase() && !p.listed && !isProviderActivationStake(p.amount)),
     onBuy: () => doBuy(p),
+    onPrewarmBuy: () => prewarmBuy(p),
     canBuy: shouldShowMarketBuyAction({ position: p, connected: isConnected, address }),
     buyState: buyState?.id === p.id ? buyState : null,
     isOwner: !!(isConnected && address && p.owner && address.toLowerCase() === p.owner.toLowerCase()),
@@ -1205,7 +1219,7 @@ function AntseedV2How() {
 }
 
 function LantsV2Card({
-  position: p, market, seller, currentEpoch, genesis, epochDuration, t, lang, listing, onBuy, canBuy, buyState,
+  position: p, market, seller, currentEpoch, genesis, epochDuration, t, lang, listing, onBuy, onPrewarmBuy, canBuy, buyState,
   onOpenOffer, canOffer, detailHref, onOpenDetail,
 }) {
   const dates = epochDates(p.stakeStartEpoch, p.stakeEndEpoch, genesis, epochDuration);
@@ -1240,7 +1254,14 @@ function LantsV2Card({
         <div className="v2-card__price">{formatUsdc(row.value)}<small>{formatUsdc(row.pricePerAnt)} / ANTS</small></div>
         <div className="v2-card__actions">
           {canBuy && (
-            <button type="button" className="v2-position-button" onClick={onBuy} disabled={buyBusy}>
+            <button
+              type="button"
+              className="v2-position-button"
+              onPointerEnter={() => onPrewarmBuy?.()}
+              onFocus={() => onPrewarmBuy?.()}
+              onClick={onBuy}
+              disabled={buyBusy}
+            >
               {buyBusy ? <Loader2 size={12} className="spin" /> : null}{t('stake.buyOnSite')} <span>↗</span>
             </button>
           )}
@@ -1343,6 +1364,8 @@ function LantsMarketTable({ items, market, cardProps, onOpenDetail, t, lang }) {
                       <button
                         type="button"
                         className="lants-nft__listbtn"
+                        onPointerEnter={() => props.onPrewarmBuy?.()}
+                        onFocus={() => props.onPrewarmBuy?.()}
                         onClick={(e) => { e.stopPropagation(); props.onBuy(); }}
                         disabled={buyBusy}
                       >
@@ -1373,7 +1396,7 @@ function LantsMarketTable({ items, market, cardProps, onOpenDetail, t, lang }) {
 }
 
 function LantsNftCard({
-  position: p, seller, currentEpoch, genesis, epochDuration, t, lang, listing, setListForm, canList, onBuy, canBuy, buyState,
+  position: p, seller, currentEpoch, genesis, epochDuration, t, lang, listing, setListForm, canList, onBuy, onPrewarmBuy, canBuy, buyState,
   activation, isOwner, address, onCancel, cancelState, onOpenOffer, canOffer,
   offersOpen, offers, onToggleOffers, onAcceptOffer, onCancelOffer, offerActionState,
   setSplitForm, canSplit, setMoveForm, canMove, mergeCheckbox, detailHref, onOpenDetail,
@@ -1442,6 +1465,8 @@ function LantsNftCard({
             <button
               type="button"
               className="lants-nft__listbtn"
+              onPointerEnter={() => onPrewarmBuy?.()}
+              onFocus={() => onPrewarmBuy?.()}
               onClick={onBuy}
               disabled={buyState?.phase === 'buying'}
             >
