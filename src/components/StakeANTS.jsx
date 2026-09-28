@@ -7,6 +7,7 @@ import {
   Layers,
   Loader2,
   AlertCircle,
+  CheckCircle2,
   ExternalLink,
   X,
 } from 'lucide-react';
@@ -14,7 +15,7 @@ import { fetchSellers, fetchLantsMarket, fetchLantsOffers, postLantsTrade, fetch
 import { useI18n } from '../i18n/index.jsx';
 import { useMarketTabRouter, marketTabHref, useLantsDetailRouter, lantsDetailHref } from '../hooks/useTabRouter';
 import {
-  createAndPostListing, fulfillListing, cancelListing, makeOffer, cancelOffer, acceptOffer,
+  createAndPostListing, fulfillListing, prewarmListingFulfillment, cancelListing, makeOffer, cancelOffer, acceptOffer,
   splitPosition, mergePositions, movePosition, isProviderActivationStake,
   USDC_BASE, WETH_BASE,
 } from '../lib/listLants';
@@ -129,13 +130,21 @@ const currencyForToken = (addr) => {
   return '';
 };
 
+// Every price a buyer actually pays or a seller actually receives on this
+// site is USDC, never native USD or ETH -- say so on the figure itself
+// rather than a bare "$", so no one mistakes it for a card payment or an
+// ETH-denominated listing (a handful of pre-2026-09-21 rows genuinely are
+// WETH; those go through formatTradeAmount instead, which already names
+// its own currency).
+const formatUsdc = (n) => {
+  const base = formatUsd(n);
+  return base === '—' ? base : `${base} USDC`;
+};
+
 // Listings/offers created on this site are USDC-denominated (see
-// src/lib/listLants.js), so the total is already a real USD amount, not a
-// converted one -- just show it directly. Deliberately never renders a raw
-// ETH amount: a listing scraped from OpenSea (backend/opensea-lants.js) can
-// still carry an ETH `unit`/`symbol`, but this site shows every price as a
-// USD total everywhere, including those, per the no-ETH-anywhere rule.
-const formatListing = (listing) => (listing?.usd != null ? formatUsd(listing.usd) : '—');
+// src/lib/listLants.js), so the total is already a real USDC amount, not a
+// converted one -- just show it directly, with the token named.
+const formatListing = (listing) => (listing?.usd != null ? formatUsdc(listing.usd) : '—');
 
 function sellerForAgent(sellers, agentId) {
   if (agentId == null) return null;
@@ -232,6 +241,9 @@ function StakeANTS() {
   const [offersOpenFor, setOffersOpenFor] = useState(null); // tokenId whose offers panel is expanded
   const [offersById, setOffersById] = useState({}); // tokenId -> { loading, items, error }
   const [offerActionState, setOfferActionState] = useState(null); // { offerId, phase, message }
+  // A completed buy/offer/accept pops this up so people know their onchain
+  // action really went through -- { type: 'buy'|'offer'|'accept', itemId, hash }.
+  const [dealPopup, setDealPopup] = useState(null);
   const [splitForm, setSplitForm] = useState(null); // { id, amount, phase, message, result }
   const [mergeSelected, setMergeSelected] = useState(() => new Set()); // position ids checked for merging, across all groups
   const [mergeState, setMergeState] = useState(null); // { ids, phase, message, result } -- last merge action's status
@@ -456,6 +468,23 @@ function StakeANTS() {
   // is already exactly the page to show.
   const marketItems = market?.items || [];
 
+  // See src/lib/listLants.js's prewarmListingFulfillment comment: this is
+  // the fix for "the wallet takes a while to pop up after clicking Buy" --
+  // load the Seaport/ethers chunk and fetch each visible listing's stored
+  // order ahead of the click instead of only starting once someone clicks.
+  const prewarmBuy = useCallback((position) => {
+    if (!position?.id || !position.listed || !position.fulfillableHere) return;
+    prewarmListingFulfillment(position.id);
+  }, []);
+
+  useEffect(() => {
+    if (!isConnected || !address || !marketItems.length) return;
+    const buyableIds = marketItems
+      .filter((p) => p.owner && address.toLowerCase() !== p.owner.toLowerCase() && p.listed && p.fulfillableHere)
+      .map((p) => p.id);
+    prewarmListingFulfillment(buyableIds);
+  }, [marketItems, isConnected, address]);
+
   const doList = async (position) => {
     const contract = market?.contract;
     if (!walletClient || !address || !contract) {
@@ -507,6 +536,7 @@ function StakeANTS() {
       setBuyState({ id: position.id, phase: 'buying', message: t('stake.buying') });
       const result = await fulfillListing({ walletClient, account: address, tokenId: position.id });
       setBuyState({ id: position.id, phase: 'done', message: t('stake.boughtOk') });
+      setDealPopup({ type: 'buy', itemId: position.id, hash: result?.hash || null });
       if (result?.seller && result?.priceWei) {
         postLantsTrade({
           tokenId: position.id, seller: result.seller, buyer: address,
@@ -682,8 +712,9 @@ function StakeANTS() {
       });
       // Same fix as doList: close on success instead of lingering on a
       // 'done' phase -- the "Offers (N)" count updating on the card is the
-      // confirmation.
+      // confirmation, plus the popup below for something impossible to miss.
       setOfferForm(null);
+      setDealPopup({ type: 'offer', itemId: position.id, hash: null });
       // Both needed: loadOffers refreshes the expandable list (if open),
       // but the closed "Offers (N)" button's count comes from the market
       // item's own offerCount field -- only a market refetch updates that.
@@ -755,8 +786,9 @@ function StakeANTS() {
     if (!walletClient || !address) return;
     try {
       setOfferActionState({ offerId: offer.id, phase: 'accepting', message: t('stake.accepting') });
-      await acceptOffer({ walletClient, account: address, offerId: offer.id });
+      const result = await acceptOffer({ walletClient, account: address, offerId: offer.id });
       setOfferActionState({ offerId: offer.id, phase: 'done', message: t('stake.acceptedOk') });
+      setDealPopup({ type: 'accept', itemId: offer.tokenId, hash: result?.hash || null });
       loadOffers(offer.tokenId, true);
       // The accepting side just sold the position away -- refresh
       // myPositions too, or it keeps showing up as theirs on the Mine tab.
@@ -806,7 +838,7 @@ function StakeANTS() {
     onCancel: doCancel,
     cancelState: cancelState?.id === p.id ? cancelState : null,
     detailHref: lantsDetailHref(p.id),
-    openSeaHref: poolsAddress ? `https://opensea.io/item/base/${poolsAddress}/${p.id}` : null,
+    onPrewarmBuy: () => prewarmBuy(p),
     onOpenDetail: () => openDetail(p.id),
     onOpenOffer: openOfferModal,
     canOffer: marketTab !== 'mine' && !!(isConnected && address && p.owner && address.toLowerCase() !== p.owner.toLowerCase() && !isProviderActivationStake(p.amount)),
@@ -821,6 +853,16 @@ function StakeANTS() {
     setMoveForm,
     canMove: !!(isConnected && address && p.owner && address.toLowerCase() === p.owner.toLowerCase() && !p.listed && !isProviderActivationStake(p.amount)),
   });
+
+  // Seaport needs to prepare the order (and possibly an approval) before
+  // the wallet can even prompt -- block the whole page for that window
+  // instead of just the one button, so a second click (or a click on
+  // something else entirely) can't fire a second wallet request into the
+  // same gap and confuse someone into thinking the first one didn't work.
+  const walletBusyMessage = buyState?.phase === 'buying' ? t('stake.buying')
+    : offerForm?.phase === 'offering' ? t('stake.offering')
+    : offerActionState?.phase === 'accepting' ? t('stake.accepting')
+    : null;
 
   return (
     <div className="table-container os-market" style={{ padding: '2rem' }}>
@@ -838,13 +880,6 @@ function StakeANTS() {
         <div style={{ marginBottom: '2.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
             <h3 style={{ fontSize: '1.125rem', fontWeight: 600 }}>{t('stake.marketTitle')}</h3>
-            {market?.collectionUrl && (
-              <a href={market.collectionUrl} target="_blank" rel="noopener noreferrer"
-                style={{ color: 'var(--info)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.8125rem' }}>
-                {t('stake.collectionLink')}
-                <ExternalLink size={12} />
-              </a>
-            )}
           </div>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '1rem' }}>
             {t('stake.marketBlurb')}
@@ -1051,6 +1086,59 @@ function StakeANTS() {
       <OfferModal form={offerForm} setForm={setOfferForm} onConfirm={doMakeOffer} t={t} />
       <SplitModal form={splitForm} setForm={setSplitForm} onConfirm={doSplit} t={t} />
       <MoveModal form={moveForm} setForm={setMoveForm} onConfirm={doMove} sellers={sellers} t={t} />
+      <WalletBusyOverlay message={walletBusyMessage} t={t} />
+      <DealDonePopup popup={dealPopup} onClose={() => setDealPopup(null)} t={t} />
+    </div>
+  );
+}
+
+/** Full-page block while a Buy/Offer/Accept is between "clicked" and
+ * "wallet responded" -- see the comment above walletBusyMessage. Not
+ * dismissable: it clears itself once the phase moves past 'buying' /
+ * 'offering' / 'accepting' (to 'done' or 'error'), same as the action
+ * that opened it. */
+function WalletBusyOverlay({ message, t }) {
+  if (!message) return null;
+  return (
+    <div className="wallet-busy-overlay" role="status" aria-live="assertive">
+      <div className="wallet-busy-overlay__card">
+        <Loader2 size={22} className="spin" />
+        <strong>{t('stake.walletBusyTitle')}</strong>
+        <p>{message}</p>
+      </div>
+    </div>
+  );
+}
+
+function DealDonePopup({ popup, onClose, t }) {
+  if (!popup) return null;
+  const titleKey = popup.type === 'buy' ? 'stake.dealDoneBuyTitle'
+    : popup.type === 'offer' ? 'stake.dealDoneOfferTitle'
+    : 'stake.dealDoneAcceptTitle';
+  const bodyKey = popup.type === 'buy' ? 'stake.dealDoneBuyBody'
+    : popup.type === 'offer' ? 'stake.dealDoneOfferBody'
+    : 'stake.dealDoneAcceptBody';
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content deal-done-popup" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>{t(titleKey)}</h2>
+          <button type="button" className="modal-close" onClick={onClose} aria-label={t('stake.dealDoneClose')}>
+            <X size={18} />
+          </button>
+        </div>
+        <div className="modal-body deal-done-popup__body">
+          <CheckCircle2 size={40} className="deal-done-popup__icon" />
+          <p>{t(bodyKey, { id: popup.itemId })}</p>
+          {popup.hash && (
+            <a href={BASESCAN_TX(popup.hash)} target="_blank" rel="noopener noreferrer" className="deal-done-popup__tx">
+              {t('stake.verifyOnBasescan')}
+              <ExternalLink size={12} />
+            </a>
+          )}
+          <button type="button" className="deal-done-popup__done" onClick={onClose}>{t('stake.dealDoneClose')}</button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1105,7 +1193,7 @@ function LantsMarketTable({ items, getProps, currentEpoch, genesis, epochDuratio
             const lockDays = p.lockDays ?? dates.lockDays;
             const state = (p.stakeStartEpoch != null && p.stakeEndEpoch != null) ? positionState(p, currentEpoch) : null;
             const sellerName = props.seller?.name || (p.agentId != null ? t('stake.agent', { id: p.agentId }) : '—');
-            const perAnt = p.listing?.perAntUsd != null ? `${formatUsd(p.listing.perAntUsd)} / ANTS` : '—';
+            const perAnt = p.listing?.perAntUsd != null ? `${formatUsdc(p.listing.perAntUsd)} / ANTS` : '—';
             const value = p.listing ? formatListing(p.listing) : '—';
             const lockLabel = lockDays != null ? t('stake.lockedForDays', { n: lockDays }) : '—';
             const stateLabel = state ? t(`stake.state.${state}`) : '—';
@@ -1157,7 +1245,7 @@ function LantsMarketTable({ items, getProps, currentEpoch, genesis, epochDuratio
 }
 
 function LantsTableActions({
-  position: p, setListForm, canList, onBuy, canBuy, buyState, isOwner, address,
+  position: p, setListForm, canList, onBuy, onPrewarmBuy, canBuy, buyState, isOwner, address,
   onCancel, cancelState, onOpenOffer, canOffer, onToggleOffers, t,
 }) {
   const cancelBusy = cancelState?.id === p.id && cancelState?.phase === 'cancelling';
@@ -1190,6 +1278,8 @@ function LantsTableActions({
         <button
           type="button"
           className="lants-nft__listbtn"
+          onPointerEnter={() => onPrewarmBuy?.()}
+          onFocus={() => onPrewarmBuy?.()}
           onClick={onBuy}
           disabled={buyState?.phase === 'buying'}
         >
@@ -1254,10 +1344,10 @@ function LantsOffersInline({ position: p, offers, isOwner, address, onAcceptOffe
 }
 
 function LantsNftCard({
-  position: p, seller, currentEpoch, genesis, epochDuration, t, lang, listing, setListForm, canList, onBuy, canBuy, buyState,
+  position: p, seller, currentEpoch, genesis, epochDuration, t, lang, listing, setListForm, canList, onBuy, onPrewarmBuy, canBuy, buyState,
   activation, isOwner, address, onCancel, cancelState, onOpenOffer, canOffer,
   offersOpen, offers, onToggleOffers, onAcceptOffer, onCancelOffer, offerActionState,
-  setSplitForm, canSplit, setMoveForm, canMove, mergeCheckbox, detailHref, openSeaHref, onOpenDetail,
+  setSplitForm, canSplit, setMoveForm, canMove, mergeCheckbox, detailHref, onOpenDetail,
 }) {
   const sellerName = seller?.name || (p.agentId != null ? t('stake.agent', { id: p.agentId }) : '—');
   const state = (p.stakeStartEpoch != null && p.stakeEndEpoch != null) ? positionState(p, currentEpoch) : null;
@@ -1267,7 +1357,7 @@ function LantsNftCard({
   const startDate = p.startDate ?? dates.startDate;
   const endDate = p.endDate ?? dates.endDate;
   const perAnt = listing?.perAntUsd != null
-    ? t('stake.perAnt', { price: formatUsd(listing.perAntUsd) })
+    ? t('stake.perAnt', { price: formatUsdc(listing.perAntUsd) })
     : null;
   const cancelBusy = cancelState?.id === p.id && cancelState?.phase === 'cancelling';
   const canCancel = isOwner && p.listed && p.fulfillableHere;
@@ -1340,12 +1430,6 @@ function LantsNftCard({
           </div>
         )}
         <div className="lants-nft__links">
-          {openSeaHref && (
-            <a href={openSeaHref} target="_blank" rel="noopener noreferrer">
-              {t('stake.viewOnOpenSea')}
-              <ExternalLink size={12} />
-            </a>
-          )}
           {canList && setListForm && (
             <button
               type="button"
@@ -1370,6 +1454,8 @@ function LantsNftCard({
             <button
               type="button"
               className="lants-nft__listbtn"
+              onPointerEnter={() => onPrewarmBuy?.()}
+              onFocus={() => onPrewarmBuy?.()}
               onClick={onBuy}
               disabled={buyState?.phase === 'buying'}
             >
@@ -1553,7 +1639,7 @@ function ListModal({ form, setForm, onConfirm, t }) {
         </label>
         {total != null && (
           <div style={{ gridColumn: '1 / -1', fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
-            {t('stake.totalPrice', { total: formatUsd(total), amount: formatAnts(form.position.amount) })}
+            {t('stake.totalPrice', { total: formatUsdc(total), amount: formatAnts(form.position.amount) })}
           </div>
         )}
         <button type="button" onClick={() => onConfirm(form.position)} disabled={busy}>
@@ -1599,7 +1685,7 @@ function OfferModal({ form, setForm, onConfirm, t }) {
         </label>
         {total != null && (
           <div style={{ gridColumn: '1 / -1', fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
-            {t('stake.totalPrice', { total: formatUsd(total), amount: formatAnts(form.position.amount) })}
+            {t('stake.totalPrice', { total: formatUsdc(total), amount: formatAnts(form.position.amount) })}
           </div>
         )}
         <button type="button" onClick={() => onConfirm(form.position)} disabled={busy || form.blocked}>

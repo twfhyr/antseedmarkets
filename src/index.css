@@ -249,6 +249,83 @@ margin-bottom: 1.25rem;
 line-height: 1.5;
 }
 
+/* ── Wallet busy overlay: blocks the whole page between clicking Buy/Offer/
+   Accept and the wallet responding, so a second click can't fire a second
+   request into that gap. Not a .modal-overlay (no backdrop click to
+   dismiss, no close button -- it clears itself). ── */
+.wallet-busy-overlay {
+position: fixed;
+inset: 0;
+z-index: 200;
+background: rgba(0, 8, 4, 0.72);
+backdrop-filter: blur(3px);
+display: flex;
+align-items: center;
+justify-content: center;
+padding: 1rem;
+}
+.wallet-busy-overlay__card {
+display: flex;
+flex-direction: column;
+align-items: center;
+gap: 0.65rem;
+text-align: center;
+background: var(--bg-secondary);
+border: 1px solid var(--border);
+border-radius: var(--radius);
+padding: 2rem 2.25rem;
+max-width: 320px;
+color: var(--text-primary);
+}
+.wallet-busy-overlay__card svg {
+color: var(--accent);
+}
+.wallet-busy-overlay__card strong {
+font-size: 1rem;
+}
+.wallet-busy-overlay__card p {
+color: var(--text-secondary);
+font-size: 0.8125rem;
+margin: 0;
+}
+
+/* ── Deal-done popup: confirms a buy/offer/accept actually went through. ── */
+.deal-done-popup__body {
+display: flex;
+flex-direction: column;
+align-items: center;
+text-align: center;
+gap: 0.85rem;
+}
+.deal-done-popup__icon {
+color: var(--accent);
+}
+.deal-done-popup__body p {
+color: var(--text-secondary);
+font-size: 0.875rem;
+line-height: 1.5;
+margin: 0;
+}
+.deal-done-popup__tx {
+display: inline-flex;
+align-items: center;
+gap: 0.3rem;
+color: var(--info);
+font-size: 0.8125rem;
+text-decoration: none;
+}
+.deal-done-popup__done {
+margin-top: 0.35rem;
+min-height: 44px;
+padding: 0.65rem 1.75rem;
+border-radius: var(--radius-sm);
+border: none;
+background: var(--accent);
+color: var(--bg-primary);
+font-weight: 600;
+cursor: pointer;
+}
+
 /* ── Deposit Field ── */
 .deposit-field {
 margin-bottom: 1.25rem;
