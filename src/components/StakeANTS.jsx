@@ -210,8 +210,9 @@ function positionState(p, currentEpoch) {
   return 'matured';
 }
 
-function StakeANTS() {
+function StakeANTS({ uiStyle = 'classical' }) {
   const { t, lang } = useI18n();
+  const isV2 = uiStyle === 'v2';
   const { address, isConnected } = useAccount();
   const { data: walletClient } = useWalletClient();
 
@@ -835,8 +836,11 @@ function StakeANTS() {
   });
 
   return (
-    <div className="table-container os-market" style={{ padding: '2rem' }}>
-      <div className="os-market__inner">
+    <>
+      {isV2 && <AntseedV2Hero market={market} onExplore={() => setMarketTabAndReset('listed')} />}
+      {isV2 && <AntseedV2Metrics market={market} />}
+      <div className="table-container os-market" style={{ padding: '2rem' }}>
+        <div className="os-market__inner">
         <div style={{ marginBottom: '2.5rem' }}>
           {marketLoading && (
             <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
@@ -1024,9 +1028,11 @@ function StakeANTS() {
               )}
               {marketItems.length > 0 && marketViewMode === 'cards' && (
                 <div className="lants-nft-grid">
-                  {marketItems.map((p) => (
+                  {marketItems.map((p) => (isV2 ? (
+                    <LantsV2Card key={`m-${p.id}`} position={p} market={market} {...commonCardProps(p)} />
+                  ) : (
                     <LantsNftCard key={`m-${p.id}`} position={p} {...commonCardProps(p)} />
-                  ))}
+                  )))}
                 </div>
               )}
               {marketItems.length > 0 && marketViewMode === 'table' && (
@@ -1059,7 +1065,113 @@ function StakeANTS() {
       <OfferModal form={offerForm} setForm={setOfferForm} onConfirm={doMakeOffer} t={t} />
       <SplitModal form={splitForm} setForm={setSplitForm} onConfirm={doSplit} t={t} />
       <MoveModal form={moveForm} setForm={setMoveForm} onConfirm={doMove} sellers={sellers} t={t} />
-    </div>
+      </div>
+      {isV2 && <AntseedV2How />}
+    </>
+  );
+}
+
+function AntseedV2Hero({ market, onExplore }) {
+  return (
+    <section className="v2-hero wrap">
+      <div className="v2-hero__copy">
+        <p className="v2-eyebrow"><span className="v2-dot" /> THE MARKETPLACE FOR STAKED ANTS</p>
+        <h1>Small beginnings.<br /><em>New possibilities.</em></h1>
+        <p className="v2-intro">
+          Your stake has a story. Give it a next chapter.<br />
+          Discover, buy and sell locked ANTS positions.
+        </p>
+        <div className="v2-hero__actions">
+          <button type="button" className="v2-primary" onClick={onExplore}>Explore the market <span>↘</span></button>
+          <a className="v2-text-button" href={marketTabHref('all')}>View all positions ↗</a>
+        </div>
+        <div className="v2-hero__note">
+          <span>01 / 04</span>
+          <p>Real positions. Clear terms.<br />A market built around the details.</p>
+        </div>
+      </div>
+      <div className="v2-art">
+        <img src={`${import.meta.env.BASE_URL}antseed-v2-art.svg`} alt="Ants moving sculptural seeds across an architectural landscape" />
+        <div className="v2-art__caption"><span>FIELD NOTES — NO. 001</span><span>THE VALUE OF COLLECTIVE EFFORT</span></div>
+      </div>
+    </section>
+  );
+}
+
+function AntseedV2Metrics({ market }) {
+  return (
+    <section className="v2-metrics wrap">
+      <div><span>THE COLLECTION</span><strong>lANTS <small>↗</small></strong></div>
+      <div><span>LISTED</span><strong>{market?.listedCount ?? '—'}</strong></div>
+      <div><span>FLOOR ASK / ANTS</span><strong>{formatUsdc(market?.floorPerAntUsd)}</strong></div>
+      <div><span>NETWORK</span><strong><i className="v2-base-icon" /> Base</strong></div>
+      <p>Locked positions.<br /><em>Open possibilities.</em></p>
+    </section>
+  );
+}
+
+function AntseedV2How() {
+  return (
+    <section className="v2-how wrap">
+      <div>
+        <p className="v2-eyebrow"><span className="v2-dot" /> A LITTLE CONTEXT</p>
+        <h2>A stake in the network.<br /><em>A position of your own.</em></h2>
+        <p>Each lANTS NFT represents a locked ANTS stake in a provider pool. Trading the position changes its owner, not the lock terms.</p>
+      </div>
+      <div className="v2-steps">
+        <article><span>01</span><div><h3>Look beyond the price.</h3><p>Compare the principal, provider pool and lock terms.</p></div></article>
+        <article><span>02</span><div><h3>Know what you buy.</h3><p>Review the position and restrictions before signing.</p></div></article>
+        <article><span>03</span><div><h3>Make your next move.</h3><p>Eligible listings settle through the live marketplace flow.</p></div></article>
+      </div>
+    </section>
+  );
+}
+
+function LantsV2Card({
+  position: p, market, seller, currentEpoch, genesis, epochDuration, t, lang, listing, onBuy, canBuy, buyState,
+  onOpenOffer, canOffer, detailHref, onOpenDetail,
+}) {
+  const dates = epochDates(p.stakeStartEpoch, p.stakeEndEpoch, genesis, epochDuration);
+  const startDate = p.startDate ?? dates.startDate;
+  const endDate = p.endDate ?? dates.endDate;
+  const row = buildLantsMarketTableRow(
+    { ...p, startDate, endDate, listing, sellerName: p.sellerName || seller?.name },
+    { currentEpoch: market?.currentEpoch ?? currentEpoch, sellers: market?.sellers || [] }
+  );
+  const buyBusy = buyState?.phase === 'buying';
+  const open = (e) => {
+    if (!onOpenDetail) return;
+    e?.preventDefault?.();
+    onOpenDetail();
+  };
+  return (
+    <article className="v2-card">
+      <div className="v2-card__top">
+        <span className="v2-card__number">lANTS / #{row.nftId}</span>
+        <span className="v2-card__status">{row.state || 'Pending start'}</span>
+      </div>
+      <div className="v2-card__main" onClick={open} role={onOpenDetail ? 'button' : undefined} tabIndex={onOpenDetail ? 0 : undefined}
+        onKeyDown={(e) => { if (onOpenDetail && isMarketTableRowActivationKey(e.key)) open(e); }}>
+        <div className="v2-card__pool"><span className="v2-pool-icon">a</span>{row.provider || 'antseed'}<span>↗</span></div>
+        <div className="v2-card__amount">{formatAnts(row.lockedAmount)}<small>ANTS staked</small></div>
+        <div className="v2-card__terms">
+          <div><span>LOCKED</span>{row.durationDays != null ? `${row.durationDays} days` : '—'}</div>
+          <div><span>UNLOCKS</span>{dateFmt(row.endDate, lang)}</div>
+        </div>
+      </div>
+      <div className="v2-card__bottom">
+        <div className="v2-card__price">{formatUsdc(row.value)}<small>{formatUsdc(row.pricePerAnt)} / ANTS</small></div>
+        <div className="v2-card__actions">
+          {canBuy && (
+            <button type="button" className="v2-position-button" onClick={onBuy} disabled={buyBusy}>
+              {buyBusy ? <Loader2 size={12} className="spin" /> : null}{t('stake.buyOnSite')} <span>↗</span>
+            </button>
+          )}
+          {canOffer && <button type="button" className="v2-position-button" onClick={() => onOpenOffer?.(p)}>{t('stake.makeOffer')} <span>↗</span></button>}
+          {detailHref && <a href={detailHref} className="v2-position-button" onClick={open}>{t('stake.viewDetails')} <span>↗</span></a>}
+        </div>
+      </div>
+    </article>
   );
 }
 

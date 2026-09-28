@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import StakeANTS from './components/StakeANTS';
 import Portfolio from './components/Portfolio';
 import Rewards from './components/Rewards';
@@ -6,6 +6,22 @@ import Header from './components/Header';
 import { useI18n } from './i18n/index.jsx';
 import { useTabRouter, tabHref } from './hooks/useTabRouter';
 import { useBuildFreshness } from './hooks/useBuildFreshness';
+
+const STYLE_STORAGE_KEY = 'antseedmarkets.uiStyle';
+
+function readInitialUiStyle() {
+  if (typeof window === 'undefined') return 'v2';
+  return window.localStorage.getItem(STYLE_STORAGE_KEY) === 'classical' ? 'classical' : 'v2';
+}
+
+function AntseedV2Announcement() {
+  return (
+    <div className="v2-announcement">
+      A different kind of market. Built by ants, for ants.
+      <span>Live marketplace · v2 design</span>
+    </div>
+  );
+}
 
 // antseedmarkets.com: a standalone, product-only site for trading lANTS
 // (locked ANTS position NFTs) -- split out of antseed-zh's monorepo
@@ -22,12 +38,25 @@ function App() {
   // URL-driven instead of plain useState: gives both sections a shareable,
   // bookmarkable link and makes browser back/forward switch between them.
   const [activeTab, setActiveTab] = useTabRouter();
+  const [uiStyle, setUiStyle] = useState(readInitialUiStyle);
+
+  useEffect(() => {
+    window.localStorage.setItem(STYLE_STORAGE_KEY, uiStyle);
+    document.documentElement.dataset.uiStyle = uiStyle;
+    return () => { delete document.documentElement.dataset.uiStyle; };
+  }, [uiStyle]);
 
   return (
-    <div className="dashboard">
-      <Header />
-      <main className="container" style={{ paddingTop: '1.5rem' }}>
-        <div className="tabs">
+    <div className="dashboard" data-ui-style={uiStyle}>
+      {uiStyle === 'v2' && <AntseedV2Announcement />}
+      <Header
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        uiStyle={uiStyle}
+        setUiStyle={setUiStyle}
+      />
+      <main className="container app-main" style={{ paddingTop: '1.5rem' }}>
+        <div className="tabs app-tabs">
           <a
             href={tabHref('stake')}
             className={`tab ${activeTab === 'stake' ? 'active' : ''}`}
@@ -51,7 +80,7 @@ function App() {
           </a>
         </div>
 
-        {activeTab === 'stake' && <StakeANTS />}
+        {activeTab === 'stake' && <StakeANTS uiStyle={uiStyle} />}
         {activeTab === 'portfolio' && <Portfolio />}
         {activeTab === 'rewards' && <Rewards />}
       </main>
