@@ -17,7 +17,7 @@
     toggle.className = 'theme-toggle';
     toggle.setAttribute('role', 'group');
     toggle.setAttribute('aria-label', 'Visual theme');
-    toggle.innerHTML = '<span class="theme-label">Visual theme</span><button type="button" data-theme-choice="editorial" title="Warm editorial design">Editorial</button><button type="button" data-theme-choice="terminal" title="High-contrast trading interface">Terminal</button>';
+    toggle.innerHTML = '<span class="theme-label">Theme</span><button type="button" data-theme-choice="editorial" title="Warm editorial design">Editorial</button><button type="button" data-theme-choice="terminal" title="High-contrast trading interface">Terminal</button>';
     header.insertBefore(controls, wallet);
     controls.append(toggle, wallet);
     const announce = document.createElement('span');
