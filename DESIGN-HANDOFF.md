@@ -14,10 +14,13 @@ Baseline: upstream `v2` commit `c9719b03b1e78f7644ec26f396a1cd1738b6c525`.
 - Portfolio gets the editorial introduction, public-address lookup, two-column buyer/provider panels and styled holdings, all backed by existing requests.
 - Rewards gets the matching introduction, lookup, real summary cards and epoch tables. Existing claim warnings and claim/stake handlers are retained.
 - Responsive layout and keyboard focus styling; full wallet addresses wrap on narrow screens.
+- Shared primary/secondary/utility/destructive action styles across cards, table view, position details, listing/offers, split/move/merge, pagination and modal/reward controls.
+- Position details use a compact two-column layout without the repeated homepage hero. Editorial shows a paper-style certificate using the same real position data; Terminal retains the original NFT graphic at a reduced size.
+- Owner-only controls and list/split/move dialogs were rendered in an isolated, temporary component harness with inert callbacks; merge selection gating was checked. No wallet was connected and the harness is not included in the deliverable.
 
 ## Functional boundaries
 
-`src/api.js`, `src/lib/`, routing hooks and `src/wagmi-config.js` are unchanged from the baseline. Marketplace card buttons now use a dedicated price row, primary “Buy position” and secondary “Make offer” actions, with accessible busy labels. Keyboard activation on the parent card is scoped to the card itself so it does not intercept Enter/Space on its action buttons. Existing buy/offer handlers and hover/focus prewarming are retained. Portfolio and Rewards changes are presentation/labels only; their fetch, validation, eligibility, transaction and error-handling code has not been replaced with prototype code. No illustrative balances or fake actions have been introduced into the application.
+`src/api.js`, `src/lib/`, routing hooks and `src/wagmi-config.js` are unchanged from the baseline. Marketplace card buttons now use a dedicated price row, primary “Buy position” and secondary “Make offer” actions, with accessible busy labels. Keyboard activation on parent cards and table rows is scoped to those elements themselves so it does not intercept Enter/Space on its action buttons. Existing buy/offer handlers and hover/focus prewarming are retained. Portfolio and Rewards changes are presentation/labels only; their fetch, validation, eligibility, transaction and error-handling code has not been replaced with prototype code. No illustrative balances or fake actions have been introduced into the application.
 
 `design-preview/` is the earlier, separate mockup for reference. It is outside `public/` and is not included in the Vite app. It can be omitted from the handover without affecting the app.
 
@@ -64,8 +67,10 @@ If upstream has moved on, review/merge only these files instead of overwriting t
 - `src/main.jsx`
 - `src/theme.jsx` (new)
 - `src/design.css` (new)
+- `src/actions.css` (new)
 - `src/components/Header.jsx`
 - `src/components/PageIntro.jsx` (new)
+- `src/components/PositionCertificate.jsx` (new)
 - `src/components/StakeANTS.jsx`
 - `src/components/Portfolio.jsx`
 - `src/components/Rewards.jsx`

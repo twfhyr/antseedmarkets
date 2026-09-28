@@ -9,6 +9,7 @@ import { config } from './wagmi-config.js'
 import { I18nProvider } from './i18n/index.jsx'
 import './index.css'
 import './design.css'
+import './actions.css'
 
 const queryClient = new QueryClient()
 

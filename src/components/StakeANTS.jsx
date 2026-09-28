@@ -8,7 +8,13 @@ import {
   AlertCircle,
   ExternalLink,
   X,
+  Scissors,
+  ArrowRightLeft,
+  Tag,
+  MessageSquare,
+  ChevronDown,
 } from 'lucide-react';
+import PositionCertificate from './PositionCertificate';
 import { fetchSellers, fetchLantsMarket, fetchLantsOffers, postLantsTrade, fetchLantsTrades } from '../api';
 import { useI18n } from '../i18n/index.jsx';
 import { useMarketTabRouter, marketTabHref, useLantsDetailRouter, lantsDetailHref } from '../hooks/useTabRouter';
@@ -920,8 +926,8 @@ function StakeANTS({ uiStyle = 'classical' }) {
 
   return (
     <>
-      {isV2 && <AntseedV2Hero market={market} onExplore={scrollToMarketTabs} />}
-      {isV2 && <AntseedV2Metrics market={market} />}
+      {isV2 && detailTokenId == null && <AntseedV2Hero market={market} onExplore={scrollToMarketTabs} />}
+      {isV2 && detailTokenId == null && <AntseedV2Metrics market={market} />}
       <div className="table-container os-market" style={{ padding: '2rem' }}>
         <div className="os-market__inner">
         <div style={{ marginBottom: '2.5rem' }}>
@@ -1164,7 +1170,7 @@ function StakeANTS({ uiStyle = 'classical' }) {
         t={t}
       />
       </div>
-      {isV2 && <AntseedV2How />}
+      {isV2 && detailTokenId == null && <AntseedV2How />}
     </>
   );
 }
@@ -1414,7 +1420,7 @@ function LantsMarketTable({ items, market, cardProps, onOpenDetail, t, lang }) {
                 role="link"
                 onClick={openRow}
                 onKeyDown={(e) => {
-                  if (isMarketTableRowActivationKey(e.key)) {
+                  if (e.target === e.currentTarget && isMarketTableRowActivationKey(e.key)) {
                     e.preventDefault();
                     openRow();
                   }
@@ -1441,19 +1447,21 @@ function LantsMarketTable({ items, market, cardProps, onOpenDetail, t, lang }) {
                     {props.canBuy && (
                       <button
                         type="button"
-                        className="lants-nft__listbtn"
+                        className="lants-nft__listbtn design-action--primary"
+                        aria-label={`Buy position #${p.id}`}
+                        aria-busy={buyBusy}
                         onPointerEnter={() => props.onPrewarmBuy?.()}
                         onFocus={() => props.onPrewarmBuy?.()}
                         onClick={(e) => { e.stopPropagation(); props.onBuy(); }}
                         disabled={buyBusy}
                       >
                         {buyBusy ? <Loader2 size={12} className="spin" /> : null}
-                        {t('stake.buyOnSite')}
+                        {buyBusy ? 'Preparing…' : 'Buy'}<span aria-hidden="true">→</span>
                       </button>
                     )}
                     {props.canOffer && (
-                      <button type="button" className="lants-nft__listbtn" onClick={(e) => { e.stopPropagation(); props.onOpenOffer(p); }}>
-                        {t('stake.makeOffer')}
+                      <button type="button" className="lants-nft__listbtn" aria-label={`Make offer on position #${p.id}`} onClick={(e) => { e.stopPropagation(); props.onOpenOffer(p); }}>
+                        Make offer
                       </button>
                     )}
                     {!props.canBuy && !props.canOffer && <span className="lants-market-table__muted">—</span>}
@@ -1522,10 +1530,10 @@ function LantsNftCard({
           {canList && setListForm && (
             <button
               type="button"
-              className="lants-nft__listbtn"
+              className="lants-nft__listbtn design-action--primary design-action--list"
               onClick={() => setListForm({ position: p, price: '', days: 30, phase: null, message: null })}
             >
-              {t('stake.listOnSite')}
+              <Tag size={14} aria-hidden="true" />List position
             </button>
           )}
           {canCancel && onCancel && (
@@ -1542,14 +1550,16 @@ function LantsNftCard({
           {canBuy && onBuy && (
             <button
               type="button"
-              className="lants-nft__listbtn"
+              className="lants-nft__listbtn design-action--primary"
+              aria-label={`Buy position #${p.id}`}
+              aria-busy={buyState?.phase === 'buying'}
               onPointerEnter={() => onPrewarmBuy?.()}
               onFocus={() => onPrewarmBuy?.()}
               onClick={onBuy}
               disabled={buyState?.phase === 'buying'}
             >
               {buyState?.phase === 'buying' ? <Loader2 size={12} className="spin" /> : null}
-              {t('stake.buyOnSite')}
+              {buyState?.phase === 'buying' ? 'Preparing…' : 'Buy position'}<span aria-hidden="true">→</span>
             </button>
           )}
           {canOffer && onOpenOffer && (
@@ -1558,12 +1568,12 @@ function LantsNftCard({
               className="lants-nft__listbtn"
               onClick={() => onOpenOffer(p)}
             >
-              {t('stake.makeOffer')}
+              Make offer
             </button>
           )}
           {onToggleOffers && (
-            <button type="button" className="lants-nft__listbtn" onClick={() => onToggleOffers(p.id)}>
-              {t('stake.viewOffers', { n: p.offerCount || 0 })}
+            <button type="button" className="lants-nft__listbtn design-action--offers" aria-expanded={!!offersOpen} aria-controls={`position-offers-${p.id}`} onClick={() => onToggleOffers(p.id)}>
+              <MessageSquare size={14} aria-hidden="true" /><span>Offers</span><span className="design-count">{p.offerCount || 0}</span><ChevronDown size={13} className="design-disclosure-icon" aria-hidden="true" />
             </button>
           )}
           {canSplit && setSplitForm && (
@@ -1572,7 +1582,7 @@ function LantsNftCard({
               className="lants-nft__listbtn"
               onClick={() => setSplitForm({ position: p, amount: '', phase: null, message: null, result: null })}
             >
-              {t('stake.splitPosition')}
+              <Scissors size={14} aria-hidden="true" />{t('stake.splitPosition')}
             </button>
           )}
           {canMove && setMoveForm && (
@@ -1581,7 +1591,7 @@ function LantsNftCard({
               className="lants-nft__listbtn"
               onClick={() => setMoveForm({ position: p, toAgentId: '', phase: null, message: null, result: null })}
             >
-              {t('stake.movePosition')}
+              <ArrowRightLeft size={14} aria-hidden="true" />{t('stake.movePosition')}
             </button>
           )}
         </div>
@@ -1596,7 +1606,7 @@ function LantsNftCard({
           </div>
         )}
         {offersOpen && (
-          <div className="lants-nft__offers">
+          <div className="lants-nft__offers" id={`position-offers-${p.id}`}>
             {offers?.loading && <div className="lants-nft__offers-empty">{t('stake.loadingOffers')}</div>}
             {offers?.error && <div className="lants-nft__offers-empty">{offers.error}</div>}
             {!offers?.loading && offers?.items?.length === 0 && (
@@ -1610,12 +1620,12 @@ function LantsNftCard({
                   <span>{formatTradeAmount(o.priceWei, currencyForToken(o.weth))}</span>
                   <span className="lants-nft__offer-addr">{truncateAddress(o.offerer)}</span>
                   {isOwner && (
-                    <button type="button" onClick={() => onAcceptOffer(o)} disabled={busy}>
+                    <button type="button" className="design-action--primary" onClick={() => onAcceptOffer(o)} disabled={busy}>
                       {busy ? <Loader2 size={11} className="spin" /> : null}{t('stake.acceptOffer')}
                     </button>
                   )}
                   {mine && !isOwner && (
-                    <button type="button" onClick={() => onCancelOffer(o)} disabled={busy}>
+                    <button type="button" className="design-action--danger" onClick={() => onCancelOffer(o)} disabled={busy}>
                       {busy ? <Loader2 size={11} className="spin" /> : null}{t('stake.cancelOffer')}
                     </button>
                   )}
@@ -1921,7 +1931,7 @@ function MergeGroup({ items, selected, onToggle, mergeState, onMerge, cardProps,
         ))}
       </div>
       <div className="lants-merge-group__actions">
-        <button type="button" onClick={() => onMerge(selectedIds)} disabled={selectedIds.length < 2 || busy}>
+        <button type="button" className="design-action--primary" onClick={() => onMerge(selectedIds)} disabled={selectedIds.length < 2 || busy}>
           {busy ? <Loader2 size={12} className="spin" /> : null}
           {t('stake.mergeSelectedConfirm', { n: selectedIds.length })}
         </button>
@@ -1987,6 +1997,8 @@ function LantsNftArt({ row, t, lang }) {
   const palette = nftPalette(0, row.nftId ?? 0);
 
   return (
+    <>
+    <PositionCertificate id={row.nftId} amount={formatAnts(row.lockedAmount)} price={formatUsdc(row.pricePerAnt)} value={formatUsdc(row.value)} start={dateFmt(row.startDate, lang)} end={dateFmt(row.endDate, lang)} provider={row.provider} state={row.state} />
     <svg
       className="lants-nft__svg"
       viewBox="0 0 290 470"
@@ -2056,6 +2068,7 @@ function LantsNftArt({ row, t, lang }) {
         </text>
       </g>
     </svg>
+    </>
   );
 }
 
