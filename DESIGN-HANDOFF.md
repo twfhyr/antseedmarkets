@@ -65,6 +65,7 @@ If upstream has moved on, review/merge only these files instead of overwriting t
 
 - `src/App.jsx`
 - `src/main.jsx`
+- `src/i18n/en.js` (Grid / List view labels)
 - `src/theme.jsx` (new)
 - `src/design.css` (new)
 - `src/actions.css` (new)
