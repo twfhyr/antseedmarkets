@@ -21,6 +21,7 @@ function HeaderNavLink({ tab, activeTab, setActiveTab, children }) {
     <a
       href={tabHref(tab)}
       className={activeTab === tab ? 'active' : ''}
+      aria-current={activeTab === tab ? 'page' : undefined}
       onClick={(e) => { e.preventDefault(); setActiveTab(tab); }}
     >
       {children}
@@ -31,8 +32,7 @@ function HeaderNavLink({ tab, activeTab, setActiveTab, children }) {
 // English-only, plain strings -- no useI18n() here, this component isn't
 // shared with antseed-zh any more (see src/i18n/index.jsx's comment for
 // why the lookup layer still exists elsewhere in this repo).
-function Header({ activeTab = 'stake', setActiveTab = () => {}, uiStyle = 'classical', setUiStyle = () => {} }) {
-  const nextStyle = uiStyle === 'v2' ? 'classical' : 'v2';
+function Header({ activeTab = 'stake', setActiveTab = () => {}, uiStyle = 'v2', theme = 'editorial', setTheme = () => {} }) {
   return (
     <header className="app-header">
       <div className="app-header__brand">
@@ -59,21 +59,20 @@ function Header({ activeTab = 'stake', setActiveTab = () => {}, uiStyle = 'class
 
       {uiStyle === 'v2' && (
         <nav className="app-header__nav" aria-label="Primary navigation">
-          <HeaderNavLink tab="stake" activeTab={activeTab} setActiveTab={setActiveTab}>Marketplace</HeaderNavLink>
+          <HeaderNavLink tab="stake" activeTab={activeTab} setActiveTab={setActiveTab}>lANTS</HeaderNavLink>
           <HeaderNavLink tab="portfolio" activeTab={activeTab} setActiveTab={setActiveTab}>Portfolio</HeaderNavLink>
           <HeaderNavLink tab="rewards" activeTab={activeTab} setActiveTab={setActiveTab}>Rewards</HeaderNavLink>
         </nav>
       )}
 
       <div className="app-header__actions">
-        <button
-          type="button"
-          className="style-toggle"
-          onClick={() => setUiStyle(nextStyle)}
-          aria-label={`Switch to ${nextStyle === 'classical' ? 'classical' : 'v2'} style`}
-        >
-          {nextStyle === 'classical' ? 'Classical style' : 'V2 style'}
-        </button>
+        <div className="design-theme-switch" role="group" aria-label="Theme">
+          <span>Theme</span>
+          <div>
+            <button type="button" aria-pressed={theme === 'editorial'} onClick={() => setTheme('editorial')}>Editorial</button>
+            <button type="button" aria-pressed={theme === 'terminal'} onClick={() => setTheme('terminal')}>Terminal</button>
+          </div>
+        </div>
         <a
           href="https://t.me/antseed"
           target="_blank"

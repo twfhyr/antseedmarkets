@@ -5,6 +5,7 @@ import { fetchBuyerActivity, fetchSellerActivity, fetchLantsMarket } from '../ap
 import { isProviderActivationStake } from '../lib/listLants';
 import { useI18n } from '../i18n/index.jsx';
 import { marketTabHref } from '../hooks/useTabRouter';
+import PageIntro from './PageIntro';
 
 function short(addr) {
   if (!addr) return '—';
@@ -33,7 +34,7 @@ function formatAnts(n) {
 
 function Row({ label, value }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid var(--border)' }}>
+    <div className="design-data-row">
       <span style={{ color: 'var(--text-secondary)' }}>{label}</span>
       <span className="mono">{value}</span>
     </div>
@@ -42,8 +43,8 @@ function Row({ label, value }) {
 
 function SectionCard({ title, children }) {
   return (
-    <div style={{ background: 'var(--bg-secondary)', borderRadius: '12px', padding: '1.25rem 1.5rem', marginBottom: '1.5rem' }}>
-      <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.75rem' }}>{title}</h3>
+    <div className="design-section-card">
+      <h3>{title}</h3>
       {children}
     </div>
   );
@@ -175,6 +176,7 @@ function LantsSection({ address, t }) {
             {items.map((p) => (
               <div
                 key={p.id}
+                className="design-holding"
                 style={{
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                   padding: '0.625rem 0.75rem', background: 'var(--bg-primary)', borderRadius: '8px',
@@ -239,17 +241,18 @@ function Portfolio() {
   }, [searchInput, t]);
 
   return (
-    <div>
-      <h2 className="table-title" style={{ marginBottom: '0.25rem' }}>{t('portfolio.title')}</h2>
-      <p style={{ color: 'var(--text-secondary)', fontSize: '0.8125rem', marginBottom: '1.5rem' }}>
-        {t('portfolio.blurb')}
-      </p>
+    <div className="design-page design-portfolio wrap">
+      <PageIntro page="portfolio" description={t('portfolio.blurb')} />
 
       {!isConnected && (
         <div style={{ marginBottom: '1.5rem' }}>
-          <div style={{ background: 'var(--bg-secondary)', padding: '1.25rem 1.5rem', borderRadius: '12px' }}>
-            <form onSubmit={handleSearch} style={{ display: 'flex', gap: '0.5rem' }}>
+          <div className="design-lookup">
+            <div><label htmlFor="portfolio-address">Look up any address</label><p>Explore a public wallet without connecting your own.</p></div>
+            <form onSubmit={handleSearch}>
               <input
+                id="portfolio-address"
+                aria-describedby={searchError ? 'portfolio-search-error' : undefined}
+                aria-invalid={!!searchError}
                 type="text"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
@@ -274,7 +277,7 @@ function Portfolio() {
               </button>
             </form>
             {searchError && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.75rem', color: 'var(--danger)', fontSize: '0.875rem' }}>
+              <div id="portfolio-search-error" role="alert" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.75rem', color: 'var(--danger)', fontSize: '0.875rem' }}>
                 <AlertCircle size={14} />
                 <span>{searchError}</span>
               </div>
@@ -284,7 +287,7 @@ function Portfolio() {
       )}
 
       {!displayAddress ? (
-        <div style={{ textAlign: 'center', padding: '3rem 2rem', color: 'var(--text-secondary)' }}>
+        <div className="design-disconnected">
           <Wallet size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
           <p>{t('portfolio.connectPrompt')}</p>
         </div>
@@ -303,9 +306,11 @@ function Portfolio() {
             </a>
             {!isConnected && <span style={{ color: 'var(--text-secondary)' }}>{t('portfolio.readOnly')}</span>}
           </div>
-          <BuyerSection address={displayAddress} t={t} />
-          <SellerSection address={displayAddress} t={t} />
-          <LantsSection address={displayAddress} t={t} />
+          <div className="design-activity-grid">
+            <BuyerSection address={displayAddress} t={t} />
+            <SellerSection address={displayAddress} t={t} />
+          </div>
+          <div className="design-holdings"><LantsSection address={displayAddress} t={t} /></div>
         </>
       )}
     </div>

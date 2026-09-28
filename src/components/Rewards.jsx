@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { fetchRewards, fetchSellers } from '../api';
 import { useI18n } from '../i18n/index.jsx';
+import PageIntro from './PageIntro';
 
 // Ported from antseed-zh's RewardsANTS.jsx (same recognized-usage reward
 // contracts, same claim/stake choice per epoch) -- see that repo's
@@ -308,26 +309,16 @@ function Rewards() {
     + sellerRows.filter((e) => !e.claimed).reduce((s, e) => s + e.amount, 0);
 
   return (
-    <div className="table-container" style={{ padding: '2rem' }}>
-      <div style={{ maxWidth: '960px' }}>
-        <div style={{ marginBottom: '1.5rem' }}>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Gift size={24} style={{ color: 'var(--accent)' }} />
-            {t('stake.rewardsTitle')}
-          </h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-            {t('stake.rewardsBlurb', { epoch: effectiveEpoch ?? '—' })}
-          </p>
-        </div>
+    <div className="design-page design-rewards wrap">
+      <div>
+        <PageIntro page="rewards" description={t('stake.rewardsBlurb', { epoch: effectiveEpoch ?? '—' })} />
 
         {!isConnected && (
-          <div style={{ marginBottom: '2rem', background: 'var(--bg-secondary)', padding: '1.5rem', borderRadius: '12px' }}>
-            <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Search size={16} style={{ color: 'var(--accent)' }} />
-              {t('stake.lookup')}
-            </h3>
-            <form onSubmit={handleSearch} style={{ display: 'flex', gap: '0.5rem' }}>
+          <div className="design-lookup">
+            <div><label htmlFor="rewards-address">{t('stake.lookup')}</label><p>Explore a public wallet without connecting your own.</p></div>
+            <form onSubmit={handleSearch}>
               <input
+                id="rewards-address" aria-invalid={!!searchError} aria-describedby={searchError ? 'rewards-search-error' : undefined}
                 type="text" value={searchInput} onChange={(e) => setSearchInput(e.target.value)}
                 placeholder={t('stake.placeholder')}
                 style={{ flex: 1, background: 'var(--bg-primary)', border: '1px solid var(--border)', borderRadius: '8px', padding: '0.5rem 0.75rem', color: 'var(--text-primary)', fontFamily: 'monospace', fontSize: '0.875rem', outline: 'none' }}
@@ -339,7 +330,7 @@ function Rewards() {
               </button>
             </form>
             {searchError && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.75rem', color: 'var(--danger)', fontSize: '0.875rem' }}>
+              <div id="rewards-search-error" role="alert" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.75rem', color: 'var(--danger)', fontSize: '0.875rem' }}>
                 <AlertCircle size={14} /><span>{searchError}</span>
               </div>
             )}
@@ -347,7 +338,7 @@ function Rewards() {
         )}
 
         {!isConnected && !searchAddress && !searchLoading && (
-          <div style={{ textAlign: 'center', padding: '3rem 2rem', color: 'var(--text-secondary)' }}>
+          <div className="design-disconnected">
             <Wallet size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
             <p>{t('stake.connectPrompt')}</p>
           </div>
@@ -380,7 +371,7 @@ function Rewards() {
               )}
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+            <div className="design-reward-summary">
               <StatCard
                 label={t('stake.unclaimedSince')}
                 value={effectiveEpoch ?? '—'}
@@ -480,13 +471,13 @@ function ClaimWarningModal({ onCancel, onConfirm, t }) {
 
 function RewardTable({ title, icon, side, rows, canAct, canClaim, claimNote, verifyHint, sellers, stakeBounds, openStake, setOpenStake, status, isRowBusy, requestClaim, doStake, agentId, t }) {
   return (
-    <div style={{ marginBottom: '2rem' }}>
-      <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+    <div className="design-reward-table">
+      <h3>
         <span style={{ color: 'var(--accent)' }}>{icon}</span>{title}
       </h3>
       {claimNote && <div style={{ fontSize: '0.75rem', color: 'var(--warning)', marginBottom: '0.5rem' }}>{claimNote}</div>}
       {verifyHint && <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', lineHeight: 1.5 }}>{verifyHint}</div>}
-      <div style={{ overflowX: 'auto' }}>
+      <div className="design-table-scroll">
         <table className="table" style={{ minWidth: '600px' }}>
           <thead>
             <tr><th>Epoch</th><th>Points</th><th>ANTS</th><th>Action</th></tr>
@@ -593,6 +584,7 @@ function ActionButton({ onClick, disabled, label, variant }) {
   const outline = variant === 'outline';
   return (
     <button
+      className={`design-reward-action${variant === 'outline' ? ' design-reward-action--outline' : ''}`}
       onClick={onClick} disabled={disabled}
       style={{
         display: 'inline-flex', alignItems: 'center', gap: '0.375rem',
@@ -629,7 +621,7 @@ function StatusLine({ s }) {
 
 function StatCard({ label, value, sub, accent }) {
   return (
-    <div style={{ background: 'var(--bg-secondary)', padding: '1.25rem', borderRadius: '12px' }}>
+    <div className="design-stat-card">
       <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>{label}</div>
       <div style={{ fontSize: '1.5rem', fontWeight: 700, color: accent || 'var(--text-primary)' }}>{value}</div>
       <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>{sub}</div>

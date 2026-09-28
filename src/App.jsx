@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import StakeANTS from './components/StakeANTS';
 import Portfolio from './components/Portfolio';
 import Rewards from './components/Rewards';
@@ -7,18 +7,13 @@ import { useI18n } from './i18n/index.jsx';
 import { useTabRouter, tabHref } from './hooks/useTabRouter';
 import { useBuildFreshness } from './hooks/useBuildFreshness';
 
-const STYLE_STORAGE_KEY = 'antseedmarkets.uiStyle';
-
-function readInitialUiStyle() {
-  if (typeof window === 'undefined') return 'v2';
-  return window.localStorage.getItem(STYLE_STORAGE_KEY) === 'classical' ? 'classical' : 'v2';
-}
+import { useTheme } from './theme.jsx';
 
 function AntseedV2Announcement() {
   return (
     <div className="v2-announcement">
       A different kind of market. Built by ants, for ants.
-      <span>Live marketplace · v2 design</span>
+      <span>lANTS marketplace · Base network</span>
     </div>
   );
 }
@@ -38,22 +33,19 @@ function App() {
   // URL-driven instead of plain useState: gives both sections a shareable,
   // bookmarkable link and makes browser back/forward switch between them.
   const [activeTab, setActiveTab] = useTabRouter();
-  const [uiStyle, setUiStyle] = useState(readInitialUiStyle);
-
-  useEffect(() => {
-    window.localStorage.setItem(STYLE_STORAGE_KEY, uiStyle);
-    document.documentElement.dataset.uiStyle = uiStyle;
-    return () => { delete document.documentElement.dataset.uiStyle; };
-  }, [uiStyle]);
+  // Keep the existing v2 components and handlers mounted when switching themes.
+  const uiStyle = 'v2';
+  const { theme, setTheme } = useTheme();
 
   return (
-    <div className="dashboard" data-ui-style={uiStyle}>
+    <div className="dashboard" data-ui-style={uiStyle} data-theme={theme}>
       {uiStyle === 'v2' && <AntseedV2Announcement />}
       <Header
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         uiStyle={uiStyle}
-        setUiStyle={setUiStyle}
+        theme={theme}
+        setTheme={setTheme}
       />
       <main className="container app-main" style={{ paddingTop: '1.5rem' }}>
         <div className="tabs app-tabs">
@@ -84,6 +76,11 @@ function App() {
         {activeTab === 'portfolio' && <Portfolio />}
         {activeTab === 'rewards' && <Rewards />}
       </main>
+      <footer className="design-footer wrap">
+        <a href={tabHref('stake')} onClick={(e) => { e.preventDefault(); setActiveTab('stake'); }}>antseed<span>markets</span><sup>®</sup></a>
+        <p>Built by ants, for ants.</p>
+        <span>LOCKED POSITIONS. OPEN POSSIBILITIES.</span>
+      </footer>
     </div>
   );
 }
