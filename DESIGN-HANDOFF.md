@@ -17,7 +17,7 @@ Baseline: upstream `v2` commit `c9719b03b1e78f7644ec26f396a1cd1738b6c525`.
 
 ## Functional boundaries
 
-`src/components/StakeANTS.jsx`, `src/api.js`, `src/lib/`, routing hooks and `src/wagmi-config.js` are unchanged from the baseline. Portfolio and Rewards changes are presentation/labels only; their fetch, validation, eligibility, transaction and error-handling code has not been replaced with prototype code. No illustrative balances or fake actions have been introduced into the application.
+`src/api.js`, `src/lib/`, routing hooks and `src/wagmi-config.js` are unchanged from the baseline. Marketplace card buttons now use a dedicated price row, primary “Buy position” and secondary “Make offer” actions, with accessible busy labels. Keyboard activation on the parent card is scoped to the card itself so it does not intercept Enter/Space on its action buttons. Existing buy/offer handlers and hover/focus prewarming are retained. Portfolio and Rewards changes are presentation/labels only; their fetch, validation, eligibility, transaction and error-handling code has not been replaced with prototype code. No illustrative balances or fake actions have been introduced into the application.
 
 `design-preview/` is the earlier, separate mockup for reference. It is outside `public/` and is not included in the Vite app. It can be omitted from the handover without affecting the app.
 
@@ -66,6 +66,7 @@ If upstream has moved on, review/merge only these files instead of overwriting t
 - `src/design.css` (new)
 - `src/components/Header.jsx`
 - `src/components/PageIntro.jsx` (new)
+- `src/components/StakeANTS.jsx`
 - `src/components/Portfolio.jsx`
 - `src/components/Rewards.jsx`
 - `scripts/uiStyleToggle.test.mjs`

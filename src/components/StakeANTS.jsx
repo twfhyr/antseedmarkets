@@ -1308,7 +1308,7 @@ function LantsV2Card({
       onClick={open}
       role={onOpenDetail ? 'button' : undefined}
       tabIndex={onOpenDetail ? 0 : undefined}
-      onKeyDown={(e) => { if (onOpenDetail && isMarketTableRowActivationKey(e.key)) open(e); }}
+      onKeyDown={(e) => { if (e.target === e.currentTarget && onOpenDetail && isMarketTableRowActivationKey(e.key)) open(e); }}
     >
       <div className="v2-card__top">
         <span className="v2-card__number">lANTS / #{row.nftId}</span>
@@ -1323,21 +1323,23 @@ function LantsV2Card({
         </div>
       </div>
       <div className="v2-card__bottom">
-        <div className="v2-card__price">{formatUsdc(row.value)}<small>{formatUsdc(row.pricePerAnt)} / ANTS</small></div>
+        <div className="v2-card__price-row"><div><span className="v2-card__ask-label">Asking price</span><div className="v2-card__price">{formatUsdc(row.value)}</div></div><span className="v2-card__unit-price">{formatUsdc(row.pricePerAnt)} / ANTS</span></div>
         <div className="v2-card__actions">
           {canBuy && (
             <button
               type="button"
-              className="v2-position-button"
+              className="v2-position-button v2-position-button--buy"
+              aria-label={`Buy position #${p.id}`}
+              aria-busy={buyBusy}
               onPointerEnter={() => onPrewarmBuy?.()}
               onFocus={() => onPrewarmBuy?.()}
               onClick={(e) => { e.stopPropagation(); onBuy?.(); }}
               disabled={buyBusy}
             >
-              {buyBusy ? <Loader2 size={12} className="spin" /> : null}{t('stake.buyOnSite')} <span>↗</span>
+              {buyBusy ? <Loader2 size={14} className="spin" /> : null}<span>{buyBusy ? 'Preparing…' : 'Buy position'}</span><span className="v2-action-arrow" aria-hidden="true">→</span>
             </button>
           )}
-          {canOffer && <button type="button" className="v2-position-button" onClick={(e) => { e.stopPropagation(); onOpenOffer?.(p); }}>{t('stake.makeOffer')} <span>↗</span></button>}
+          {canOffer && <button type="button" className="v2-position-button v2-position-button--offer" aria-label={`Make offer on position #${p.id}`} onClick={(e) => { e.stopPropagation(); onOpenOffer?.(p); }}>Make offer</button>}
         </div>
         {buyState?.message && buyState.phase !== 'error' && (
           <div className="v2-position-button__message">

@@ -223,4 +223,23 @@ html[data-theme="terminal"] .v2-chain-popup__flowers, html[data-theme="terminal"
   html[data-theme="terminal"] .v2-hero h1, html[data-theme="terminal"] .design-page-hero h1 { font-size: 39px; }
   html[data-theme="terminal"] .v2-hero__note { display: none; }
 }
+/* Position actions: price first, clear primary/secondary hierarchy. */
+.v2-card__bottom { display: block; padding: 20px 0; }
+.v2-card__price-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 19px; }
+.v2-card__ask-label { display: block; color: var(--muted); font-size: 8px; text-transform: uppercase; letter-spacing: .12em; margin-bottom: 6px; }
+.v2-card__unit-price { font-size: 10px; color: var(--muted); text-align: right; padding-bottom: 3px; }
+.v2-card__actions { display: flex; flex-wrap: wrap; gap: 9px; }
+.v2-card__actions .v2-position-button { flex: 1 1 100px; min-height: 46px; padding: 0 15px; border-radius: 4px; font: 500 12px var(--font-ui); transition: background .18s, border-color .18s, box-shadow .18s; }
+.v2-card__actions .v2-position-button--buy { flex-grow: 1.25; background: var(--accent); border-color: var(--accent); color: var(--accent-foreground); justify-content: space-between; }
+.v2-card__actions .v2-position-button--buy:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); box-shadow: 0 3px 10px #00000012; }
+.v2-card__actions .v2-position-button--offer { background: transparent; border-color: var(--line); color: var(--ink); }
+.v2-card__actions .v2-position-button--offer:hover:not(:disabled) { background: var(--green); border-color: var(--soft-accent); }
+.v2-card__actions .v2-position-button span { margin-left: 0; }
+.v2-action-arrow { font-size: 19px; line-height: 1; }
+.v2-card__actions .v2-position-button:disabled { opacity: .6; cursor: progress; }
+html[data-theme="terminal"] .v2-card__actions .v2-position-button--buy { background: var(--accent); color: var(--accent-foreground); }
+html[data-theme="terminal"] .v2-card__actions .v2-position-button--buy:hover:not(:disabled) { background: var(--accent-hover); }
+html[data-theme="terminal"] .v2-card__actions .v2-position-button--offer { background: transparent; border-color: #36515f; }
+html[data-theme="terminal"] .v2-card__actions .v2-position-button--offer:hover:not(:disabled) { background: var(--green); }
+html[data-theme="terminal"] .v2-card__ask-label, html[data-theme="terminal"] .v2-card__unit-price { font-family: var(--font-data); }
 @media(prefers-reduced-motion:reduce) { html { scroll-behavior: auto; } *,*::before,*::after { transition: none !important; } }
