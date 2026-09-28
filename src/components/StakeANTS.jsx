@@ -256,6 +256,7 @@ function StakeANTS({ uiStyle = 'classical' }) {
   const [statsTrades, setStatsTrades] = useState([]);
   const [chainCompletion, setChainCompletion] = useState(null);
   const [buyErrorPopup, setBuyErrorPopup] = useState(null);
+  const marketTabsRef = useRef(null);
 
   const showChainCompletion = useCallback((payload) => {
     if (!isV2) return;
@@ -476,6 +477,12 @@ function StakeANTS({ uiStyle = 'classical' }) {
     clearDetail();
     setMarketPage(1);
     setMarketTab(...args);
+  };
+  const scrollToMarketTabs = () => {
+    setMarketTabAndReset('listed');
+    window.requestAnimationFrame(() => {
+      marketTabsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
   };
   const setMarketSortAndReset = resetToFirstPage(setMarketSort);
   const setMarketFiltersAndReset = resetToFirstPage(setMarketFilters);
@@ -913,7 +920,7 @@ function StakeANTS({ uiStyle = 'classical' }) {
 
   return (
     <>
-      {isV2 && <AntseedV2Hero market={market} onExplore={() => setMarketTabAndReset('listed')} />}
+      {isV2 && <AntseedV2Hero market={market} onExplore={scrollToMarketTabs} />}
       {isV2 && <AntseedV2Metrics market={market} />}
       <div className="table-container os-market" style={{ padding: '2rem' }}>
         <div className="os-market__inner">
@@ -932,7 +939,7 @@ function StakeANTS({ uiStyle = 'classical' }) {
           )}
           {!marketLoading && (market || marketTab === 'history') && (
             <>
-              <div className="lants-subtabs">
+              <div className="lants-subtabs" ref={marketTabsRef}>
                 <div className="os-tabs" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                   <FilterChip active={marketTab === 'listed'} href={marketTabHref('listed')} onClick={() => setMarketTabAndReset('listed')} label={t('stake.filterListed')} />
                   <FilterChip active={marketTab === 'all'} href={marketTabHref('all')} onClick={() => setMarketTabAndReset('all')} label={t('stake.filterAll')} />
@@ -1296,13 +1303,18 @@ function LantsV2Card({
     onOpenDetail();
   };
   return (
-    <article className="v2-card">
+    <article
+      className="v2-card"
+      onClick={open}
+      role={onOpenDetail ? 'button' : undefined}
+      tabIndex={onOpenDetail ? 0 : undefined}
+      onKeyDown={(e) => { if (onOpenDetail && isMarketTableRowActivationKey(e.key)) open(e); }}
+    >
       <div className="v2-card__top">
         <span className="v2-card__number">lANTS / #{row.nftId}</span>
         <span className="v2-card__status">{row.state || 'Pending start'}</span>
       </div>
-      <div className="v2-card__main" onClick={open} role={onOpenDetail ? 'button' : undefined} tabIndex={onOpenDetail ? 0 : undefined}
-        onKeyDown={(e) => { if (onOpenDetail && isMarketTableRowActivationKey(e.key)) open(e); }}>
+      <div className="v2-card__main">
         <div className="v2-card__pool"><span className="v2-pool-icon">a</span>{row.provider || 'antseed'}<span>↗</span></div>
         <div className="v2-card__amount">{formatAnts(row.lockedAmount)}<small>ANTS staked</small></div>
         <div className="v2-card__terms">
@@ -1319,14 +1331,13 @@ function LantsV2Card({
               className="v2-position-button"
               onPointerEnter={() => onPrewarmBuy?.()}
               onFocus={() => onPrewarmBuy?.()}
-              onClick={onBuy}
+              onClick={(e) => { e.stopPropagation(); onBuy?.(); }}
               disabled={buyBusy}
             >
               {buyBusy ? <Loader2 size={12} className="spin" /> : null}{t('stake.buyOnSite')} <span>↗</span>
             </button>
           )}
-          {canOffer && <button type="button" className="v2-position-button" onClick={() => onOpenOffer?.(p)}>{t('stake.makeOffer')} <span>↗</span></button>}
-          {detailHref && <a href={detailHref} className="v2-position-button" onClick={open}>{t('stake.viewDetails')} <span>↗</span></a>}
+          {canOffer && <button type="button" className="v2-position-button" onClick={(e) => { e.stopPropagation(); onOpenOffer?.(p); }}>{t('stake.makeOffer')} <span>↗</span></button>}
         </div>
         {buyState?.message && buyState.phase !== 'error' && (
           <div className="v2-position-button__message">

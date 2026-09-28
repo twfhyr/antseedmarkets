@@ -1660,6 +1660,7 @@ text-decoration: underline;
   gap: 1rem;
   margin-bottom: 1rem;
   flex-wrap: wrap;
+  scroll-margin-top: 128px;
 }
 .lants-stats-panel {
   border: 1px solid var(--border);
@@ -1957,8 +1958,11 @@ html[data-ui-style="v2"] body {
   padding: 0 38px;
   background: transparent;
   border-bottom: 1px solid #dcded1;
-  position: static;
+  position: sticky;
+  top: 0;
+  z-index: 1200;
   color: #293127;
+  backdrop-filter: blur(14px);
 }
 
 .dashboard[data-ui-style="v2"] .app-header__brand {
