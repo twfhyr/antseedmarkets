@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAccount } from 'wagmi';
-import { Search, Loader2, Wallet, ExternalLink, AlertCircle } from 'lucide-react';
+import { Search, Wallet, ExternalLink, AlertCircle } from 'lucide-react';
 import { fetchBuyerActivity, fetchSellerActivity, fetchLantsMarket } from '../api';
 import { isProviderActivationStake } from '../lib/listLants';
 import { useI18n } from '../i18n/index.jsx';
@@ -55,86 +55,43 @@ function SectionCard({ title, children }) {
  * (buyers_onchain table) as the Buyers tab's own detail modal
  * (BuyersList.jsx's BuyerActivityModal), just self-scoped here instead of
  * a click-through. Never fabricated: a field Antscan hasn't populated
- * shows as "—", and no indexed activity at all shows the empty message.
+ * shows as "—". Purely presentational -- Portfolio fetches (see
+ * useAddressActivity below) so it can decide, address-wide, whether this
+ * wallet is a buyer/provider at all before rendering any activity UI.
  */
-function BuyerSection({ address, t }) {
-  const [data, setData] = useState(null);
-  const [notFound, setNotFound] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setNotFound(false);
-    fetchBuyerActivity(address)
-      .then((row) => { if (!cancelled) setData(row); })
-      .catch(() => { if (!cancelled) setNotFound(true); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, [address]);
-
+function BuyerSection({ data, t }) {
   return (
     <SectionCard title={t('portfolio.buyerSection')}>
-      {loading ? (
-        <div className="empty-state">{t('common.loading')}</div>
-      ) : notFound ? (
-        <div className="empty-state">{t('portfolio.noBuyerActivity')}</div>
-      ) : (
-        <>
-          <Row label={t('table.spentUsdc')} value={usd(data.spent_usdc != null ? Number(data.spent_usdc) / 1e6 : null)} />
-          <Row label={t('table.deposited')} value={usd(data.deposited_usdc != null ? Number(data.deposited_usdc) / 1e6 : null)} />
-          <Row label={t('buyerActivity.withdrawnUsdc')} value={usd(data.withdrawn_usdc != null ? Number(data.withdrawn_usdc) / 1e6 : null)} />
-          <Row label={t('table.requests')} value={num(data.request_count)} />
-          <Row label={t('buyerActivity.inputTokens')} value={num(data.input_tokens)} />
-          <Row label={t('buyerActivity.outputTokens')} value={num(data.output_tokens)} />
-          <Row label={t('buyerActivity.channels')} value={num(data.channel_count)} />
-          <Row label={t('buyerActivity.uniqueSellers')} value={num(data.unique_sellers)} />
-          <Row label={t('table.firstSeen')} value={fmtDate(data.first_seen_at)} />
-          <Row label={t('table.lastSeen')} value={fmtDate(data.last_seen_at)} />
-        </>
-      )}
+      <Row label={t('table.spentUsdc')} value={usd(data.spent_usdc != null ? Number(data.spent_usdc) / 1e6 : null)} />
+      <Row label={t('table.deposited')} value={usd(data.deposited_usdc != null ? Number(data.deposited_usdc) / 1e6 : null)} />
+      <Row label={t('buyerActivity.withdrawnUsdc')} value={usd(data.withdrawn_usdc != null ? Number(data.withdrawn_usdc) / 1e6 : null)} />
+      <Row label={t('table.requests')} value={num(data.request_count)} />
+      <Row label={t('buyerActivity.inputTokens')} value={num(data.input_tokens)} />
+      <Row label={t('buyerActivity.outputTokens')} value={num(data.output_tokens)} />
+      <Row label={t('buyerActivity.channels')} value={num(data.channel_count)} />
+      <Row label={t('buyerActivity.uniqueSellers')} value={num(data.unique_sellers)} />
+      <Row label={t('table.firstSeen')} value={fmtDate(data.first_seen_at)} />
+      <Row label={t('table.lastSeen')} value={fmtDate(data.last_seen_at)} />
     </SectionCard>
   );
 }
 
-/** Seller-side mirror of BuyerSection -- sellers_onchain table via the new
- *  /api/history/seller/:address route (added alongside this tab). */
-function SellerSection({ address, t }) {
-  const [data, setData] = useState(null);
-  const [notFound, setNotFound] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setNotFound(false);
-    fetchSellerActivity(address)
-      .then((row) => { if (!cancelled) setData(row); })
-      .catch(() => { if (!cancelled) setNotFound(true); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, [address]);
-
+/** Seller-side mirror of BuyerSection -- sellers_onchain table via the
+ *  /api/history/seller/:address route. Presentational, see BuyerSection's
+ *  comment. */
+function SellerSection({ data, t }) {
   return (
     <SectionCard title={t('portfolio.sellerSection')}>
-      {loading ? (
-        <div className="empty-state">{t('common.loading')}</div>
-      ) : notFound ? (
-        <div className="empty-state">{t('portfolio.noSellerActivity')}</div>
-      ) : (
-        <>
-          {data.agent_id != null && <Row label={t('portfolio.agentId')} value={`#${data.agent_id}`} />}
-          <Row label={t('portfolio.earnedUsdc')} value={usd(data.earned_usdc != null ? Number(data.earned_usdc) / 1e6 : null)} />
-          <Row label={t('portfolio.stakedUsdc')} value={usd(data.stake_usdc != null ? Number(data.stake_usdc) / 1e6 : null)} />
-          <Row label={t('table.requests')} value={num(data.request_count)} />
-          <Row label={t('buyerActivity.inputTokens')} value={num(data.input_tokens)} />
-          <Row label={t('buyerActivity.outputTokens')} value={num(data.output_tokens)} />
-          <Row label={t('portfolio.uniqueBuyers')} value={num(data.unique_buyers)} />
-          <Row label={t('buyerActivity.channels')} value={num(data.channel_count)} />
-          <Row label={t('table.firstSeen')} value={fmtDate(data.first_seen_at)} />
-          <Row label={t('table.lastSeen')} value={fmtDate(data.last_seen_at)} />
-        </>
-      )}
+      {data.agent_id != null && <Row label={t('portfolio.agentId')} value={`#${data.agent_id}`} />}
+      <Row label={t('portfolio.earnedUsdc')} value={usd(data.earned_usdc != null ? Number(data.earned_usdc) / 1e6 : null)} />
+      <Row label={t('portfolio.stakedUsdc')} value={usd(data.stake_usdc != null ? Number(data.stake_usdc) / 1e6 : null)} />
+      <Row label={t('table.requests')} value={num(data.request_count)} />
+      <Row label={t('buyerActivity.inputTokens')} value={num(data.input_tokens)} />
+      <Row label={t('buyerActivity.outputTokens')} value={num(data.output_tokens)} />
+      <Row label={t('portfolio.uniqueBuyers')} value={num(data.unique_buyers)} />
+      <Row label={t('buyerActivity.channels')} value={num(data.channel_count)} />
+      <Row label={t('table.firstSeen')} value={fmtDate(data.first_seen_at)} />
+      <Row label={t('table.lastSeen')} value={fmtDate(data.last_seen_at)} />
     </SectionCard>
   );
 }
@@ -142,33 +99,20 @@ function SellerSection({ address, t }) {
 /** lANTS holdings -- same positions the lANTS tab's Mine sub-tab lists
  *  (fetchLantsMarket({owner})), shown here as a read-only summary. Actual
  *  management (list/split/merge/move) stays on the lANTS tab; this links
- *  there rather than duplicating that UI. */
-function LantsSection({ address, t }) {
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setError(false);
-    fetchLantsMarket({ owner: address, pageSize: 100 })
-      .then((data) => { if (!cancelled) setItems(data?.items || []); })
-      .catch(() => { if (!cancelled) setError(true); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, [address]);
-
+ *  there rather than duplicating that UI. Presentational -- Portfolio
+ *  fetches (see useAddressActivity) so the empty state can point at the
+ *  marketplace listing itself, not just say "nothing here." */
+function LantsSection({ items, loading, t }) {
   const total = items.reduce((sum, p) => sum + (p.amount || 0), 0);
 
   return (
     <SectionCard title={t('portfolio.lantsSection')}>
       {loading ? (
         <div className="empty-state">{t('common.loading')}</div>
-      ) : error ? (
-        <div className="empty-state">{t('portfolio.noLants')}</div>
       ) : items.length === 0 ? (
-        <div className="empty-state">{t('portfolio.noLants')}</div>
+        <div className="empty-state">
+          {t('portfolio.noLants')} <a href={marketTabHref('listed')}>{t('portfolio.marketplaceLink')}</a>.
+        </div>
       ) : (
         <>
           <Row label={t('portfolio.totalLants')} value={`${formatAnts(total)} ANTS`} />
@@ -228,6 +172,56 @@ function Portfolio() {
   const [searchError, setSearchError] = useState(null);
 
   const displayAddress = isConnected ? address : searchAddress;
+
+  // Fetched here, not inside BuyerSection/SellerSection, because whether
+  // to show the activity grid AT ALL (only for a wallet that's actually a
+  // buyer or a provider) is a decision this component has to make before
+  // rendering either section.
+  const [buyerData, setBuyerData] = useState(null);
+  const [buyerLoading, setBuyerLoading] = useState(true);
+  const [sellerData, setSellerData] = useState(null);
+  const [sellerLoading, setSellerLoading] = useState(true);
+  const [lantsItems, setLantsItems] = useState([]);
+  const [lantsLoading, setLantsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!displayAddress) return undefined;
+    let cancelled = false;
+    setBuyerLoading(true);
+    setBuyerData(null);
+    fetchBuyerActivity(displayAddress)
+      .then((row) => { if (!cancelled) setBuyerData(row); })
+      .catch(() => { if (!cancelled) setBuyerData(null); })
+      .finally(() => { if (!cancelled) setBuyerLoading(false); });
+    return () => { cancelled = true; };
+  }, [displayAddress]);
+
+  useEffect(() => {
+    if (!displayAddress) return undefined;
+    let cancelled = false;
+    setSellerLoading(true);
+    setSellerData(null);
+    fetchSellerActivity(displayAddress)
+      .then((row) => { if (!cancelled) setSellerData(row); })
+      .catch(() => { if (!cancelled) setSellerData(null); })
+      .finally(() => { if (!cancelled) setSellerLoading(false); });
+    return () => { cancelled = true; };
+  }, [displayAddress]);
+
+  useEffect(() => {
+    if (!displayAddress) return undefined;
+    let cancelled = false;
+    setLantsLoading(true);
+    setLantsItems([]);
+    fetchLantsMarket({ owner: displayAddress, pageSize: 100 })
+      .then((data) => { if (!cancelled) setLantsItems(data?.items || []); })
+      .catch(() => { if (!cancelled) setLantsItems([]); })
+      .finally(() => { if (!cancelled) setLantsLoading(false); });
+    return () => { cancelled = true; };
+  }, [displayAddress]);
+
+  const activityLoading = buyerLoading || sellerLoading;
+  const hasActivity = !!buyerData || !!sellerData;
 
   const handleSearch = useCallback((e) => {
     e.preventDefault();
@@ -306,11 +300,15 @@ function Portfolio() {
             </a>
             {!isConnected && <span style={{ color: 'var(--text-secondary)' }}>{t('portfolio.readOnly')}</span>}
           </div>
-          <div className="design-activity-grid">
-            <BuyerSection address={displayAddress} t={t} />
-            <SellerSection address={displayAddress} t={t} />
+          <div className="design-holdings">
+            <LantsSection items={lantsItems} loading={lantsLoading} t={t} />
           </div>
-          <div className="design-holdings"><LantsSection address={displayAddress} t={t} /></div>
+          {!activityLoading && hasActivity && (
+            <div className="design-activity-grid">
+              {buyerData && <BuyerSection data={buyerData} t={t} />}
+              {sellerData && <SellerSection data={sellerData} t={t} />}
+            </div>
+          )}
         </>
       )}
     </div>
