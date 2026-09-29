@@ -10,21 +10,11 @@
 
 const DEFAULT_CONDUIT_KEY = `0x${'0'.repeat(64)}`;
 const SEAPORT_V16 = '0x0000000000000068F116a894984e2DB1123eB395';
-
-// The wallet-confirmation popup for a buy felt slow to appear because
-// fulfillListing() used to only start loading seaport-js/ethers (a real
-// network-fetched chunk, not bundled with the rest of the app) and fetching
-// the stored order from our own API *after* the click -- two round trips
-// before Seaport's own executeAllActions() could even ask the wallet to
-// sign. Both are prewarmed instead: StakeANTS.jsx calls
-// prewarmListingFulfillment() as soon as buyable listings are visible (and
-// again on hover/focus of a Buy button, for anything paginated in after
-// that), so by the time someone actually clicks, the chunk is already
-// loaded and the order already fetched -- fulfillListing() below just reads
-// both from cache.
-const ORDER_PREWARM_TTL_MS = 30_000;
+const ORDER_PREWARM_TTL_MS = 10_000;
 
 let fulfillmentDepsPromise = null;
+const lantsOrderCache = new Map();
+
 const loadFulfillmentDeps = () => {
   if (!fulfillmentDepsPromise) {
     fulfillmentDepsPromise = Promise.all([
@@ -38,32 +28,28 @@ const loadFulfillmentDeps = () => {
   return fulfillmentDepsPromise;
 };
 
-const lantsOrderCache = new Map();
 const getCachedLantsOrder = (tokenId) => {
   const id = String(tokenId);
+  const now = Date.now();
   const cached = lantsOrderCache.get(id);
-  if (cached && Date.now() - cached.loadedAt < ORDER_PREWARM_TTL_MS) return cached.promise;
+  if (cached && now - cached.loadedAt < ORDER_PREWARM_TTL_MS) return cached.promise;
   const promise = import('../api.js')
     .then(({ fetchLantsOrder }) => fetchLantsOrder(id))
     .catch((err) => {
       lantsOrderCache.delete(id);
       throw err;
     });
-  lantsOrderCache.set(id, { loadedAt: Date.now(), promise });
+  lantsOrderCache.set(id, { loadedAt: now, promise });
   return promise;
 };
 
-/** Fire-and-forget: start loading the fulfillment code chunk and the stored
- * order(s) for currently-visible buyable listings before anyone clicks Buy.
- * Safe to call repeatedly (e.g. once per market refresh, once per hover) --
- * both caches are keyed/deduped, so extra calls are no-ops. */
 export function prewarmListingFulfillment(tokenIds) {
   const ids = (Array.isArray(tokenIds) ? tokenIds : [tokenIds])
     .filter((id) => id !== null && id !== undefined && id !== '')
     .map((id) => String(id));
   if (!ids.length) return;
   loadFulfillmentDeps().catch(() => {});
-  [...new Set(ids)].slice(0, 24).forEach((id) => {
+  [...new Set(ids)].slice(0, 20).forEach((id) => {
     getCachedLantsOrder(id).catch(() => {});
   });
 }

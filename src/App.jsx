@@ -7,6 +7,17 @@ import { useI18n } from './i18n/index.jsx';
 import { useTabRouter, tabHref } from './hooks/useTabRouter';
 import { useBuildFreshness } from './hooks/useBuildFreshness';
 
+import { useTheme } from './theme.jsx';
+
+function AntseedV2Announcement() {
+  return (
+    <div className="v2-announcement">
+      A different kind of market. Built by ants, for ants.
+      <span>lANTS marketplace · Base network</span>
+    </div>
+  );
+}
+
 // antseedmarkets.com: a standalone, product-only site for trading lANTS
 // (locked ANTS position NFTs) -- split out of antseed-zh's monorepo
 // 2026-09-24 so this domain's identity, preview, and codebase are its own
@@ -22,12 +33,22 @@ function App() {
   // URL-driven instead of plain useState: gives both sections a shareable,
   // bookmarkable link and makes browser back/forward switch between them.
   const [activeTab, setActiveTab] = useTabRouter();
+  // Keep the existing v2 components and handlers mounted when switching themes.
+  const uiStyle = 'v2';
+  const { theme, setTheme } = useTheme();
 
   return (
-    <div className="dashboard">
-      <Header />
-      <main className="container" style={{ paddingTop: '1.5rem' }}>
-        <div className="tabs">
+    <div className="dashboard" data-ui-style={uiStyle} data-theme={theme}>
+      {uiStyle === 'v2' && <AntseedV2Announcement />}
+      <Header
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        uiStyle={uiStyle}
+        theme={theme}
+        setTheme={setTheme}
+      />
+      <main className="container app-main" style={{ paddingTop: '1.5rem' }}>
+        <div className="tabs app-tabs">
           <a
             href={tabHref('stake')}
             className={`tab ${activeTab === 'stake' ? 'active' : ''}`}
@@ -51,10 +72,15 @@ function App() {
           </a>
         </div>
 
-        {activeTab === 'stake' && <StakeANTS />}
+        {activeTab === 'stake' && <StakeANTS uiStyle={uiStyle} />}
         {activeTab === 'portfolio' && <Portfolio />}
         {activeTab === 'rewards' && <Rewards />}
       </main>
+      <footer className="design-footer wrap">
+        <a href={tabHref('stake')} onClick={(e) => { e.preventDefault(); setActiveTab('stake'); }}>antseed<span>markets</span><sup>®</sup></a>
+        <p>Built by ants, for ants.</p>
+        <span>LOCKED POSITIONS. OPEN POSSIBILITIES.</span>
+      </footer>
     </div>
   );
 }

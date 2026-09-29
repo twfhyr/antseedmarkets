@@ -72,11 +72,11 @@ export function useTabRouter() {
 }
 
 // ─── lANTS tab's own market sub-tab (/lants/sales, /lants/all, /lants/mine,
-// /lants/history) ───────────────────────────────────────────────────────
+// /lants/stats, /lants/history) ─────────────────────────────────────────
 // A second path segment under 'lants' only, so a filtered view of the
 // lANTS market is itself a shareable/bookmarkable link. Ported verbatim
 // from antseed-zh's useTabRouter.js (same reasoning, same sub-tab names).
-const MARKET_TAB_PATHS = { listed: 'sales', all: 'all', mine: 'mine', history: 'history' };
+const MARKET_TAB_PATHS = { listed: 'sales', all: 'all', mine: 'mine', stats: 'stats', history: 'history' };
 const MARKET_PATH_TABS = Object.fromEntries(
   Object.entries(MARKET_TAB_PATHS).map(([tab, p]) => [p, tab])
 );
@@ -116,8 +116,8 @@ export function lantsDetailHref(tokenId) {
 }
 
 /**
- * Drives the lANTS market's tab (For sale / All NFTs / Mine / History)
- * from the URL's second path segment. Only meaningful while the lANTS tab
+ * Drives the visible lANTS market tabs from the URL's second path segment.
+ * Only meaningful while the lANTS tab
  * itself is mounted -- StakeANTS.jsx only exists in the tree when
  * activeTab === 'stake', so every call here is implicitly scoped to that.
  */
