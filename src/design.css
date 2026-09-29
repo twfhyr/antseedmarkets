@@ -37,8 +37,9 @@ button:not(:disabled) { cursor: pointer; }
 button:disabled { opacity: .55; }
 :where(a,button,input,select):focus-visible { outline: 2px solid var(--accent) !important; outline-offset: 4px; }
 .dashboard[data-ui-style="v2"] .app-header {
-  position: relative; z-index: 50; gap: 22px; color: var(--ink);
-  border-color: var(--line); background: var(--paper); backdrop-filter: none;
+  position: sticky; top: 0; z-index: 1200; gap: 22px; color: var(--ink);
+  border-color: var(--line); background: color-mix(in srgb, var(--paper) 92%, transparent); backdrop-filter: blur(16px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
 }
 .dashboard[data-ui-style="v2"] .app-header__title { color: var(--ink); }
 .dashboard[data-ui-style="v2"] .app-header__nav { gap: 26px; }

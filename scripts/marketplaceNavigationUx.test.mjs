@@ -9,6 +9,7 @@ const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 
 const stake = read('src/components/StakeANTS.jsx');
 const css = read('src/index.css');
+const designCss = read('src/design.css');
 
 assert.match(stake, /const marketTabsRef = useRef\(null\)/, 'StakeANTS should keep a ref for the marketplace subtabs');
 assert.match(stake, /marketTabsRef\.current\?\.scrollIntoView\(\{ behavior: 'smooth', block: 'start' \}\)/, 'Explore should smooth-scroll to the marketplace subtabs');
@@ -21,5 +22,6 @@ assert.doesNotMatch(v2Card, /t\('stake\.viewDetails'\)/, 'V2 marketplace cards s
 assert.match(v2Card, /onClick=\{\(e\) => \{ e\.stopPropagation\(\); onBuy\?\.\(\); \}\}/, 'Buy action should not also trigger card navigation');
 assert.match(v2Card, /onClick=\{\(e\) => \{ e\.stopPropagation\(\); onOpenOffer\?\.\(p\); \}\}/, 'Offer action should not also trigger card navigation');
 
-assert.match(css, /\.dashboard\[data-ui-style="v2"\] \.app-header\s*\{[\s\S]*position: sticky;[\s\S]*top: 0;[\s\S]*z-index: 1200;/, 'V2 header should stay floating above marketplace content while scrolling');
+assert.match(designCss, /\.dashboard\[data-ui-style="v2"\] \.app-header\s*\{[\s\S]*position: sticky;[\s\S]*top: 0;[\s\S]*z-index: 1200;/, 'V2 design header should keep the live sticky/floating navigation instead of downgrading it to relative positioning');
+assert.doesNotMatch(designCss, /\.dashboard\[data-ui-style="v2"\] \.app-header\s*\{[\s\S]*position: relative;/, 'Design integration must not override the sticky header from the live app');
 assert.match(css, /\.lants-subtabs\s*\{[\s\S]*scroll-margin-top: 128px;/, 'Marketplace subtabs need scroll offset for the sticky header');
