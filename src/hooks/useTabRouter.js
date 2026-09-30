@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from 'react';
 // 'stake' (labelled "lANTS" in the UI, key kept from antseed-zh's history)
 // maps to the bare base path, so the root URL (antseedmarkets.com/) lands
 // directly on the marketplace by default.
-const TAB_PATHS = { stake: '', portfolio: 'portfolio', rewards: 'rewards' };
+const TAB_PATHS = { stake: '', portfolio: 'portfolio', rewards: 'rewards', providers: 'providers' };
 const PATH_TABS = Object.fromEntries(
   Object.entries(TAB_PATHS).filter(([, p]) => p).map(([tab, p]) => [p, tab])
 );
@@ -65,6 +65,7 @@ export function useTabRouter() {
     const url = urlForTab(tab);
     if (window.location.pathname !== url) {
       window.history.pushState(null, '', url);
+      window.dispatchEvent(new Event('antseed:navigate'));
     }
   }, []);
 
@@ -174,4 +175,83 @@ export function useLantsDetailRouter() {
   }, []);
 
   return [detailId, openDetail, closeDetail, clearDetail];
+}
+
+// ─── Providers tab detail (/providers/:agentId[/announcement|comments|chat]) ───
+const PROVIDER_AGENT_RE = /^\d+$/;
+export const PROVIDER_TABS = ['announcement', 'comments', 'chat'];
+const PROVIDER_DEFAULT_TAB = 'announcement';
+
+function providerLocation() {
+  const path = window.location.pathname;
+  const rel = path.startsWith(BASE) ? path.slice(BASE.length) : path.replace(/^\//, '');
+  const [first, second, third] = rel.split('/');
+  if (first !== 'providers') return { agentId: null, tab: PROVIDER_DEFAULT_TAB };
+  const id = decodeURIComponent(second || '');
+  if (!PROVIDER_AGENT_RE.test(id)) return { agentId: null, tab: PROVIDER_DEFAULT_TAB };
+  const tab = PROVIDER_TABS.includes(third) ? third : PROVIDER_DEFAULT_TAB;
+  return { agentId: id, tab };
+}
+
+export function providersHref() {
+  return `${BASE}providers`;
+}
+
+export function providerHref(agentId, tab) {
+  if (agentId == null || agentId === '') return providersHref();
+  const base = `${BASE}providers/${encodeURIComponent(String(agentId))}`;
+  if (!tab || tab === PROVIDER_DEFAULT_TAB) return base;
+  return `${base}/${encodeURIComponent(tab)}`;
+}
+
+export function useProviderDetailRouter() {
+  const initial = providerLocation();
+  const [agentId, setAgentId] = useState(initial.agentId);
+  const [providerTab, setProviderTabState] = useState(initial.tab);
+
+  useEffect(() => {
+    const sync = () => {
+      const loc = providerLocation();
+      setAgentId(loc.agentId);
+      setProviderTabState(loc.tab);
+    };
+    window.addEventListener('popstate', sync);
+    window.addEventListener('antseed:navigate', sync);
+    return () => {
+      window.removeEventListener('popstate', sync);
+      window.removeEventListener('antseed:navigate', sync);
+    };
+  }, []);
+
+  const openProvider = useCallback((id, tab = PROVIDER_DEFAULT_TAB) => {
+    if (!PROVIDER_AGENT_RE.test(String(id || ''))) return;
+    const nextTab = PROVIDER_TABS.includes(tab) ? tab : PROVIDER_DEFAULT_TAB;
+    setAgentId(String(id));
+    setProviderTabState(nextTab);
+    const url = providerHref(id, nextTab);
+    if (window.location.pathname !== url) {
+      window.history.pushState(null, '', url);
+    }
+  }, []);
+
+  const setProviderTab = useCallback((tab) => {
+    if (!PROVIDER_TABS.includes(tab) || !agentId) return;
+    setProviderTabState(tab);
+    const url = providerHref(agentId, tab);
+    if (window.location.pathname !== url) {
+      window.history.pushState(null, '', url);
+    }
+  }, [agentId]);
+
+  const closeProvider = useCallback(() => {
+    setAgentId(null);
+    setProviderTabState(PROVIDER_DEFAULT_TAB);
+    const url = providersHref();
+    if (window.location.pathname !== url) {
+      window.history.pushState(null, '', url);
+      window.dispatchEvent(new Event('antseed:navigate'));
+    }
+  }, []);
+
+  return [agentId, providerTab, openProvider, setProviderTab, closeProvider];
 }

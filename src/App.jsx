@@ -2,6 +2,7 @@ import React from 'react';
 import StakeANTS from './components/StakeANTS';
 import Portfolio from './components/Portfolio';
 import Rewards from './components/Rewards';
+import Providers from './components/Providers';
 import Header from './components/Header';
 import { useI18n } from './i18n/index.jsx';
 import { useTabRouter, tabHref } from './hooks/useTabRouter';
@@ -57,6 +58,13 @@ function App() {
             {t('nav.stake')}
           </a>
           <a
+            href={tabHref('providers')}
+            className={`tab ${activeTab === 'providers' ? 'active' : ''}`}
+            onClick={(e) => { e.preventDefault(); setActiveTab('providers'); }}
+          >
+            {t('nav.providers')}
+          </a>
+          <a
             href={tabHref('portfolio')}
             className={`tab ${activeTab === 'portfolio' ? 'active' : ''}`}
             onClick={(e) => { e.preventDefault(); setActiveTab('portfolio'); }}
@@ -73,6 +81,7 @@ function App() {
         </div>
 
         {activeTab === 'stake' && <StakeANTS uiStyle={uiStyle} />}
+        {activeTab === 'providers' && <Providers />}
         {activeTab === 'portfolio' && <Portfolio />}
         {activeTab === 'rewards' && <Rewards />}
       </main>

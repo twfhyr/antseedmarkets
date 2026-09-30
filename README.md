@@ -14,15 +14,17 @@ meant antseedmarkets.com's browser tab title, social-share preview, and
 codebase were all indistinguishable from antseed-zh.com's except by careful
 inspection.
 
-This repo is the fix: a standalone frontend containing **only** the two
-sections antseedmarkets.com needs --
-[`StakeANTS.jsx`](src/components/StakeANTS.jsx) (the lANTS marketplace
-itself: list / buy / offer / split / merge / move / history) and
-[`Portfolio.jsx`](src/components/Portfolio.jsx) (one wallet's activity as a
-buyer + seller, plus its lANTS holdings) -- with its own branding, its own
-`index.html` (so the link preview is genuinely different from
-antseed-zh.com's), and English-only copy (no i18n language switcher, no
-`zh.js` -- see `src/i18n/index.jsx`).
+This repo is the fix: a standalone frontend for antseedmarkets.com --
+[`StakeANTS.jsx`](src/components/StakeANTS.jsx) (the lANTS marketplace),
+[`Portfolio.jsx`](src/components/Portfolio.jsx), Rewards, and
+[`Providers.jsx`](src/components/Providers.jsx) (live directory: catalog,
+homepages, comments, chat). English-only copy (no i18n language switcher,
+no `zh.js` -- see `src/i18n/index.jsx`).
+
+The Providers tab visual system comes from Ellis's Antseed Directory
+prototype in [`provider/`](provider/README.md). Live listings are the DHT
+catalog (`GET /api/sellers`), not the fictional sample profiles in that
+folder.
 
 Everything else that lives in antseed-zh (Overview, Buyers, Sellers,
 Stakers, Services, Tokenomics, $ANTS Info, Rewards, Chat, Town Board,

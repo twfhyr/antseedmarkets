@@ -122,3 +122,43 @@ export async function fetchRewards(address, bustCache = false) {
   const bust = bustCache ? '&bust=1' : '';
   return get(`/rewards?address=${address}${bust}`);
 }
+
+export async function fetchSeller(id) {
+  return get(`/sellers/${encodeURIComponent(id)}`);
+}
+
+/** Per-agentId stats: { buyers, ratingAvg, ratingCount }. Buyers come from
+ *  Antscan buyerSellerPair, not sellers.uniqueBuyers. */
+export async function fetchProviderBuyerCounts() {
+  return get('/providers/buyer-counts');
+}
+
+export async function fetchProviderAccess(agentId, address) {
+  const q = address ? `?address=${encodeURIComponent(address)}` : '';
+  return get(`/providers/${encodeURIComponent(agentId)}/access${q}`);
+}
+
+export async function fetchProviderComments(agentId) {
+  return get(`/providers/${encodeURIComponent(agentId)}/comments`);
+}
+
+export async function fetchProviderAnnouncements(agentId) {
+  return get(`/providers/${encodeURIComponent(agentId)}/announcements`);
+}
+
+export async function fetchProviderChat(agentId, after) {
+  const q = after ? `?after=${encodeURIComponent(after)}` : '';
+  return get(`/providers/${encodeURIComponent(agentId)}/chat${q}`);
+}
+
+export async function postProviderComment(agentId, body) {
+  return post(`/providers/${encodeURIComponent(agentId)}/comments`, body);
+}
+
+export async function postProviderAnnouncement(agentId, body) {
+  return post(`/providers/${encodeURIComponent(agentId)}/announcements`, body);
+}
+
+export async function postProviderChat(agentId, body) {
+  return post(`/providers/${encodeURIComponent(agentId)}/chat`, body);
+}
