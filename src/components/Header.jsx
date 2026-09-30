@@ -49,7 +49,7 @@ function Header({ activeTab = 'stake', setActiveTab = () => {}, uiStyle = 'v2', 
         )}
         <div>
           <span className="app-header__title">
-            {uiStyle === 'v2' ? <>antseed<span>markets</span><b>®</b></> : 'antseedmarkets'}
+            {uiStyle === 'v2' ? <>antseed<span>markets</span></> : 'antseedmarkets'}
           </span>
           <div className="app-header__tagline">
             The marketplace built by ants for ants

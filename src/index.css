@@ -1988,11 +1988,6 @@ html[data-ui-style="v2"] body {
   font-weight: 400;
 }
 
-.dashboard[data-ui-style="v2"] .app-header__title b {
-  font-size: 11px;
-  margin: 4px 0 0 3px;
-}
-
 .app-header__tagline {
   font-size: 0.75rem;
   color: var(--text-secondary);

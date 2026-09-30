@@ -86,7 +86,7 @@ function App() {
         {activeTab === 'rewards' && <Rewards />}
       </main>
       <footer className="design-footer wrap">
-        <a href={tabHref('stake')} onClick={(e) => { e.preventDefault(); setActiveTab('stake'); }}>antseed<span>markets</span><sup>®</sup></a>
+        <a href={tabHref('stake')} onClick={(e) => { e.preventDefault(); setActiveTab('stake'); }}>antseed<span>markets</span></a>
         <p>Built by ants, for ants.</p>
         <span>LOCKED POSITIONS. OPEN POSSIBILITIES.</span>
       </footer>

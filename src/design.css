@@ -144,7 +144,6 @@ select option { background: var(--bg-secondary); color: var(--ink); }
 .design-footer { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; padding-top: 28px; padding-bottom: 30px; border-top: 1px solid var(--line); }
 .design-footer > a { font-size: 22px; font-weight: 700; color: var(--ink); text-decoration: none; letter-spacing: -1px; }
 .design-footer > a span { font-weight: 400; }
-.design-footer sup { font-size: 10px; margin-left: 4px; }
 .design-footer p { font-size: 11px; color: var(--muted); }
 .design-footer > span { font: 8px var(--font-data); letter-spacing: .08em; color: var(--muted); }
 /* Terminal is the same UI and state, not a second implementation. */
