@@ -29,9 +29,10 @@ assert.match(header, /aria-pressed=\{theme === 'terminal'\}/, 'Terminal selectio
 assert.match(header, /<ConnectButton/, 'Keep RainbowKit wallet connection, not a mock button');
 const nav = read('src/lib/nav.js');
 assert.match(header, /visiblePrimaryNav\(\)/, 'Header renders the visible primary tab list');
-assert.match(nav, /tab: 'stake', hidden: false/, 'Stake stays in the primary nav');
+assert.match(nav, /tab: 'stake', hidden: true/, 'Stake moves under the homepage account entry');
 assert.match(nav, /tab: 'market', hidden: false/, 'Marketplace sits next to Stake');
-for (const tab of ['providers', 'discovery', 'leaderboard', 'portfolio', 'rewards']) {
+assert.match(nav, /tab: 'providers', hidden: false/, 'Providers stays promoted for the approved homepage navigation');
+for (const tab of ['discovery', 'leaderboard', 'portfolio', 'rewards']) {
   assert.match(nav, new RegExp(`tab: '${tab}', hidden: true`), `${tab} is temporarily hidden from primary nav`);
 }
 for (const component of ['AntseedV2Hero','AntseedV2Metrics','LantsV2Card','AntseedV2How']) assert.ok(stake.includes(`function ${component}`));

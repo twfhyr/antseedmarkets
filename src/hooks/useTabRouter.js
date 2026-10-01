@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 
-// Tabs <-> URL path segments. Three tabs exist in this repo -- the lANTS
-// marketplace, a wallet's Portfolio, and Rewards (added 2026-09-24) -- see
-// README.md for why this is a separate, product-only repo from antseed-zh.
-// 'stake' (key kept from antseed-zh's history) maps to the bare base path,
-// so the root URL (antseedmarkets.com/) lands on the Stake desk by default.
-const TAB_PATHS = { stake: '', market: 'lants', portfolio: 'portfolio', rewards: 'rewards', providers: 'providers', discovery: 'discovery', leaderboard: 'leaderboard', profile: 'profile' };
+// Tabs <-> URL path segments. The approved site-home design owns the bare
+// root path; existing app surfaces keep their deep links so bookmarks and
+// production routes continue to work while account/staking moves under
+// /my-antseed/.
+const TAB_PATHS = { home: '', stake: 'my-antseed', next: 'next', market: 'lants', portfolio: 'portfolio', rewards: 'rewards', providers: 'providers', discovery: 'discovery', leaderboard: 'leaderboard', profile: 'profile' };
 const PATH_TABS = Object.fromEntries(
   Object.entries(TAB_PATHS).filter(([, p]) => p).map(([tab, p]) => [p, tab])
 );
@@ -15,7 +14,7 @@ const PATH_TABS = Object.fromEntries(
 // called this tab "IANTS" before reverting to "lANTS" -- kept so any old
 // links out there still resolve instead of 404ing.
 PATH_TABS.iants = 'market';
-const DEFAULT_TAB = 'stake';
+const DEFAULT_TAB = 'home';
 const VALID_TABS = new Set(Object.keys(TAB_PATHS));
 
 const BASE = import.meta.env.BASE_URL.endsWith('/')
@@ -43,8 +42,8 @@ export const tabHref = urlForTab;
 /**
  * Drives the active tab from the URL path instead of purely in-memory
  * state, so both sections have a shareable, bookmarkable, reload-safe
- * link: antseedmarkets.com/ (lANTS) and antseedmarkets.com/portfolio.
- * Falls back to 'stake' for any unknown path (nginx serves index.html for
+ * link: antseedmarkets.com/ (site-home) and antseedmarkets.com/lants.
+ * Falls back to 'home' for any unknown path (nginx serves index.html for
  * these -- see the deploy notes in README.md -- so a fresh load of an
  * unrecognized deep link still renders the app instead of a 404).
  */

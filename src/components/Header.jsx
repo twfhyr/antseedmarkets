@@ -4,6 +4,7 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useDisconnect } from 'wagmi';
 import { fetchProfile } from '../api';
 import { tabHref } from '../hooks/useTabRouter';
+import { visiblePrimaryNav } from '../lib/nav';
 import { useI18n } from '../i18n/index.jsx';
 
 
@@ -165,6 +166,7 @@ function WalletMenuInner({
 
 function Header({ activeTab = 'stake', setActiveTab = () => {}, uiStyle = 'v2', theme = 'editorial', setTheme = () => {} }) {
   const { t } = useI18n();
+  const primaryNav = visiblePrimaryNav();
   return (
     <header className="app-header">
       <div className="app-header__brand">
@@ -180,9 +182,13 @@ function Header({ activeTab = 'stake', setActiveTab = () => {}, uiStyle = 'v2', 
           />
         )}
         <div>
-          <span className="app-header__title">
+          <a
+            className="app-header__title"
+            href={tabHref('home')}
+            onClick={(e) => { e.preventDefault(); setActiveTab('home'); }}
+          >
             {uiStyle === 'v2' ? <>antseed<span>markets</span></> : 'antseedmarkets'}
-          </span>
+          </a>
           <div className="app-header__tagline">
             The marketplace built by ants for ants
           </div>
@@ -190,9 +196,11 @@ function Header({ activeTab = 'stake', setActiveTab = () => {}, uiStyle = 'v2', 
       </div>
 
       <nav className="app-header__nav" aria-label="Primary navigation">
-        <a href={import.meta.env.VITE_MY_ANTSEED_URL || '/my-antseed/'}>My Antseed</a>
-        <HeaderNavLink tab="providers" activeTab={activeTab} setActiveTab={setActiveTab}>Providers</HeaderNavLink>
-        <HeaderNavLink tab="market" activeTab={activeTab} setActiveTab={setActiveTab}>Marketplace</HeaderNavLink>
+        {primaryNav.map(({ tab }) => (
+          <HeaderNavLink key={tab} tab={tab} activeTab={activeTab} setActiveTab={setActiveTab}>
+            {t(`nav.${tab}`)}
+          </HeaderNavLink>
+        ))}
       </nav>
 
       <div className="app-header__actions">

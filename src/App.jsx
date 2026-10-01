@@ -1,4 +1,5 @@
 import React from 'react';
+import SiteHome, { SiteNext } from './components/SiteHome';
 import StakeANTS from './components/StakeANTS';
 import StakingDesk from './components/StakingDesk';
 import Portfolio from './components/Portfolio';
@@ -28,7 +29,7 @@ function AntseedV2Announcement() {
 // (locked ANTS position NFTs) -- split out of antseed-zh's monorepo
 // 2026-09-24 so this domain's identity, preview, and codebase are its own
 // rather than a build variant of the company dashboard. See README.md.
-// Primary tabs come from visiblePrimaryNav() (Stake, then Marketplace).
+// Primary tabs come from visiblePrimaryNav(); the approved site-home owns /.
 // Hidden routes still render so /providers and the rest keep working.
 function App() {
   const { t } = useI18n();
@@ -67,6 +68,8 @@ function App() {
           ))}
         </div>
 
+        {activeTab === 'home' && <SiteHome setActiveTab={setActiveTab} />}
+        {activeTab === 'next' && <SiteNext setActiveTab={setActiveTab} />}
         {activeTab === 'stake' && <StakingDesk />}
         {activeTab === 'market' && <StakeANTS uiStyle={uiStyle} />}
         {activeTab === 'providers' && <Providers />}
@@ -77,7 +80,7 @@ function App() {
         {activeTab === 'profile' && <Profile />}
       </main>
       <footer className="design-footer wrap">
-        <a href={tabHref('stake')} onClick={(e) => { e.preventDefault(); setActiveTab('stake'); }}>antseed<span>markets</span></a>
+        <a href={tabHref('home')} onClick={(e) => { e.preventDefault(); setActiveTab('home'); }}>antseed<span>markets</span></a>
         <p>Built by ants, for ants.</p>
         <span>LOCKED POSITIONS. OPEN POSSIBILITIES.</span>
       </footer>

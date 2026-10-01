@@ -1,0 +1,40 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
+
+const app = read('src/App.jsx');
+const router = read('src/hooks/useTabRouter.js');
+const header = read('src/components/Header.jsx');
+const nav = read('src/lib/nav.js');
+const siteHome = read('src/components/SiteHome.jsx');
+const css = read('src/index.css');
+
+assert.match(router, /const DEFAULT_TAB = 'home'/, 'root URL should render approved homepage, not staking desk');
+assert.match(router, /home: ''/, 'homepage owns the bare root path');
+assert.match(router, /stake: 'my-antseed'/, 'staking desk moves under the account area path');
+assert.match(router, /next: 'next'/, 'Next page remains reachable as its own routed page');
+assert.match(app, /activeTab === 'home' && <SiteHome/, 'App renders approved homepage at root');
+assert.match(app, /activeTab === 'next' && <SiteNext/, 'App renders approved Next page');
+assert.match(app, /activeTab === 'stake' && <StakingDesk/, 'financial staking handlers stay mounted under account route');
+assert.match(header, /visiblePrimaryNav\(\)/, 'Header keeps the shared approved primary nav');
+assert.match(nav, /tab: 'providers', hidden: false/, 'Header keeps approved Providers nav');
+assert.match(nav, /tab: 'market', hidden: false/, 'Header keeps approved Marketplace nav');
+assert.doesNotMatch(header, /HeaderNavLink tab="stake"/, 'Staking is not promoted in primary nav');
+assert.match(siteHome, /Small hands\.<br\s*\/?>\s*<em>Far-reaching roots\.<\/em>/, 'Homepage carries approved hero headline');
+assert.match(siteHome, /My Antseed/, 'Homepage includes My Antseed department');
+assert.match(siteHome, /Marketplace/, 'Homepage includes Marketplace department');
+assert.match(siteHome, /Providers/, 'Homepage includes Providers department');
+assert.match(siteHome, /tabHref\('stake'\)/, 'My Antseed links route to hosted account area');
+assert.match(siteHome, /tabHref\('market'\)/, 'Marketplace links preserve /lants deep link');
+assert.match(siteHome, /tabHref\('providers'\)/, 'Providers links preserve /providers deep link');
+assert.match(siteHome, /tabHref\('next'\)/, 'Next is only exposed from homepage content');
+assert.match(siteHome, /sessionStorage\.setItem\('ants.dashboard.token'/, 'Prototype token carryover is preserved safely for local ANTS service');
+assert.doesNotMatch(siteHome, /127\.0\.0\.1:5176/, 'Prototype localhost links are removed from production app');
+assert.doesNotMatch(siteHome, /http:\/\//, 'Homepage internal routes are not hard-coded to local preview hosts');
+assert.match(css, /\.site-home\s*\{/, 'Approved homepage styles are integrated');
+assert.match(css, /\.site-home-scene\s*\{/, 'Approved illustration styling is integrated');
+assert.match(css, /prefers-reduced-motion/, 'Homepage keeps reduced-motion support');

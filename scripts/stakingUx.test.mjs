@@ -16,11 +16,13 @@ const desk = read('src/components/StakingDesk.jsx');
 const stakeLib = read('src/lib/stakeAnts.js');
 const api = read('src/api.js');
 const css = read('src/index.css');
-const backend = fs.readFileSync(path.resolve(root, '../antseed-zh/backend/server.js'), 'utf8');
+const backendPath = path.resolve(root, '../antseed-zh/backend/server.js');
+const backend = fs.existsSync(backendPath) ? fs.readFileSync(backendPath, 'utf8') : '';
 
-assert.match(nav, /tab: 'stake', hidden: false/);
+assert.match(nav, /tab: 'stake', hidden: true/);
 assert.match(nav, /tab: 'market', hidden: false/);
-for (const tab of ['providers', 'discovery', 'leaderboard', 'portfolio', 'rewards']) {
+assert.match(nav, /tab: 'providers', hidden: false/);
+for (const tab of ['discovery', 'leaderboard', 'portfolio', 'rewards']) {
   assert.match(nav, new RegExp(`tab: '${tab}', hidden: true`), `${tab} stays routed but hidden`);
 }
 assert.match(header, /visiblePrimaryNav\(\)/);
@@ -48,7 +50,7 @@ assert.match(stakeLib, /pools\.stake\(agentId, amountWei, epochs\)/);
 assert.match(stakeLib, /stakeBuyerReward/);
 assert.match(stakeLib, /stakeAgentReward/);
 assert.match(stakeLib, /restakeStakerRewardsBatch/);
-assert.match(backend, /app\.get\('\/api\/staking\/overview'/);
+if (backend) assert.match(backend, /app\.get\('\/api\/staking\/overview'/);
 assert.match(css, /\.staking-desk\s*\{/);
 assert.match(css, /\.staking-ticker\s*\{/);
 assert.match(css, /\.staking-form\s*\{/);
