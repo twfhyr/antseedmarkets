@@ -192,3 +192,24 @@ export async function saveProfile(body) {
 export async function fetchUsedProviders(address) {
   return get(`/profiles/${encodeURIComponent(address)}/providers`);
 }
+
+export async function fetchDiscovery(address) {
+  const q = address ? `?address=${encodeURIComponent(address)}` : '';
+  return get(`/discovery${q}`);
+}
+
+export async function fetchDiscoveryAccess(address) {
+  return get(`/discovery/access?address=${encodeURIComponent(address)}`);
+}
+
+export async function fetchDiscoveryFeatured() {
+  return get('/discovery/featured');
+}
+
+export async function postDiscovery(body) {
+  return post('/discovery', body);
+}
+
+export async function postDiscoveryVote(listingId, body) {
+  return post(`/discovery/${encodeURIComponent(listingId)}/vote`, body);
+}

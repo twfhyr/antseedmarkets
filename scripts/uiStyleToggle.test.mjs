@@ -27,7 +27,7 @@ assert.match(header, /<span>Theme<\/span>/, 'Visible centred theme label');
 assert.match(header, /aria-pressed=\{theme === 'editorial'\}/, 'Editorial selection is accessible');
 assert.match(header, /aria-pressed=\{theme === 'terminal'\}/, 'Terminal selection is accessible');
 assert.match(header, /<ConnectButton/, 'Keep RainbowKit wallet connection, not a mock button');
-for (const tab of ['stake', 'providers', 'leaderboard', 'portfolio', 'rewards']) assert.ok(header.includes(`HeaderNavLink tab="${tab}"`));
+for (const tab of ['stake', 'providers', 'discovery', 'leaderboard', 'portfolio', 'rewards']) assert.ok(header.includes(`HeaderNavLink tab="${tab}"`));
 for (const component of ['AntseedV2Hero','AntseedV2Metrics','LantsV2Card','AntseedV2How']) assert.ok(stake.includes(`function ${component}`));
 assert.match(css, /html\[data-theme="terminal"\]/, 'Terminal styles are scoped');
 assert.match(css, /#f7f5ed/, 'Retain editorial paper');

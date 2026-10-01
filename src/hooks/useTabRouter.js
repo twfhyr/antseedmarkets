@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from 'react';
 // 'stake' (labelled "lANTS" in the UI, key kept from antseed-zh's history)
 // maps to the bare base path, so the root URL (antseedmarkets.com/) lands
 // directly on the marketplace by default.
-const TAB_PATHS = { stake: '', portfolio: 'portfolio', rewards: 'rewards', providers: 'providers', leaderboard: 'leaderboard', profile: 'profile' };
+const TAB_PATHS = { stake: '', portfolio: 'portfolio', rewards: 'rewards', providers: 'providers', discovery: 'discovery', leaderboard: 'leaderboard', profile: 'profile' };
 const PATH_TABS = Object.fromEntries(
   Object.entries(TAB_PATHS).filter(([, p]) => p).map(([tab, p]) => [p, tab])
 );

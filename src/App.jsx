@@ -3,6 +3,7 @@ import StakeANTS from './components/StakeANTS';
 import Portfolio from './components/Portfolio';
 import Rewards from './components/Rewards';
 import Providers from './components/Providers';
+import Discovery from './components/Discovery';
 import Leaderboard from './components/Leaderboard';
 import Profile from './components/Profile';
 import NicknameGate from './components/NicknameGate';
@@ -26,7 +27,7 @@ function AntseedV2Announcement() {
 // (locked ANTS position NFTs) -- split out of antseed-zh's monorepo
 // 2026-09-24 so this domain's identity, preview, and codebase are its own
 // rather than a build variant of the company dashboard. See README.md.
-// Tabs: lANTS, Providers, Leaderboard, Portfolio, Rewards. No nav-gating
+// Tabs: lANTS, Providers, Discovery, Leaderboard, Portfolio, Rewards. No nav-gating
 // flag needed the way antseed-zh.com's build variant used IS_MARKET_VARIANT.
 function App() {
   const { t } = useI18n();
@@ -67,6 +68,13 @@ function App() {
             {t('nav.providers')}
           </a>
           <a
+            href={tabHref('discovery')}
+            className={`tab ${activeTab === 'discovery' ? 'active' : ''}`}
+            onClick={(e) => { e.preventDefault(); setActiveTab('discovery'); }}
+          >
+            {t('nav.discovery')}
+          </a>
+          <a
             href={tabHref('leaderboard')}
             className={`tab ${activeTab === 'leaderboard' ? 'active' : ''}`}
             onClick={(e) => { e.preventDefault(); setActiveTab('leaderboard'); }}
@@ -91,6 +99,7 @@ function App() {
 
         {activeTab === 'stake' && <StakeANTS uiStyle={uiStyle} />}
         {activeTab === 'providers' && <Providers />}
+        {activeTab === 'discovery' && <Discovery />}
         {activeTab === 'leaderboard' && <Leaderboard />}
         {activeTab === 'portfolio' && <Portfolio />}
         {activeTab === 'rewards' && <Rewards />}

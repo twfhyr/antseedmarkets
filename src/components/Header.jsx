@@ -191,6 +191,7 @@ function Header({ activeTab = 'stake', setActiveTab = () => {}, uiStyle = 'v2', 
         <nav className="app-header__nav" aria-label="Primary navigation">
           <HeaderNavLink tab="stake" activeTab={activeTab} setActiveTab={setActiveTab}>lANTS</HeaderNavLink>
           <HeaderNavLink tab="providers" activeTab={activeTab} setActiveTab={setActiveTab}>Providers</HeaderNavLink>
+          <HeaderNavLink tab="discovery" activeTab={activeTab} setActiveTab={setActiveTab}>Discovery</HeaderNavLink>
           <HeaderNavLink tab="leaderboard" activeTab={activeTab} setActiveTab={setActiveTab}>Leaderboard</HeaderNavLink>
           <HeaderNavLink tab="portfolio" activeTab={activeTab} setActiveTab={setActiveTab}>Portfolio</HeaderNavLink>
           <HeaderNavLink tab="rewards" activeTab={activeTab} setActiveTab={setActiveTab}>Rewards</HeaderNavLink>

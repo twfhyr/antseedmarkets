@@ -11,6 +11,7 @@ import {
   postProviderComment,
   postProviderAnnouncement,
   postProviderChat,
+  fetchDiscoveryFeatured,
 } from '../api';
 import { useI18n } from '../i18n/index.jsx';
 import { useProviderDetailRouter, providerHref, PROVIDER_TABS, tabHref } from '../hooks/useTabRouter';
@@ -172,7 +173,7 @@ function RolePills({ roles, t }) {
   );
 }
 
-function ProviderCard({ seller, stats, t, onOpen }) {
+function ProviderCard({ seller, stats, t, onOpen, featured }) {
   const agentId = seller.agentId != null ? String(seller.agentId) : null;
   const look = lookFor(agentId);
   const inner = (
@@ -180,6 +181,7 @@ function ProviderCard({ seller, stats, t, onOpen }) {
       <div className="dir-art-block">
         <CoverMotif pattern={look.pattern} />
         <span className="dir-art-label">{isOnline(seller) ? t('providers.online') : t('providers.offline')}</span>
+        {featured ? <span className="dir-featured">{t('providers.highlighted')}</span> : null}
         <div className="dir-logo"><span>{initial(seller.name)}</span></div>
       </div>
       <div className="dir-card-body">
@@ -207,7 +209,8 @@ function ProviderCard({ seller, stats, t, onOpen }) {
   }
   return (
     <a
-      className={`dir-card dir-${look.color}`}
+      className={`dir-card dir-${look.color}${featured ? ' is-featured' : ''}`}
+      title={featured ? t('providers.highlightedHint') : undefined}
       href={providerHref(agentId)}
       onClick={(e) => { e.preventDefault(); onOpen(agentId); }}
     >
@@ -559,13 +562,14 @@ export default function Providers() {
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState('buyers');
   const [view, setView] = useState('grid');
+  const [featuredIds, setFeaturedIds] = useState(() => new Set());
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError(false);
-    Promise.allSettled([fetchSellers(), fetchProviderBuyerCounts()])
-      .then(([s, c]) => {
+    Promise.allSettled([fetchSellers(), fetchProviderBuyerCounts(), fetchDiscoveryFeatured()])
+      .then(([s, c, f]) => {
         if (cancelled) return;
         if (s.status !== 'fulfilled') {
           setError(true);
@@ -575,12 +579,25 @@ export default function Providers() {
         }
         if (c.status === 'fulfilled') setCounts(c.value.items || {});
         else setCounts(null);
+        if (f.status === 'fulfilled') {
+          setFeaturedIds(new Set((f.value.agentIds || []).map((id) => String(id))));
+        }
       })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, []);
 
-  const ranked = useMemo(() => sortProviders(sellers, counts, sort), [sellers, counts, sort]);
+  const ranked = useMemo(() => {
+    const list = sortProviders(sellers, counts, sort);
+    if (!featuredIds.size) return list;
+    const featured = [];
+    const rest = [];
+    for (const s of list) {
+      if (s.agentId != null && featuredIds.has(String(s.agentId))) featured.push(s);
+      else rest.push(s);
+    }
+    return [...featured, ...rest];
+  }, [sellers, counts, sort, featuredIds]);
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return ranked;
@@ -690,6 +707,7 @@ export default function Providers() {
                 stats={statsFor(seller, counts)}
                 t={t}
                 onOpen={openProvider}
+                featured={seller.agentId != null && featuredIds.has(String(seller.agentId))}
               />
             ))}
           </div>
