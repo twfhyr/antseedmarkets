@@ -16,6 +16,7 @@ import {
 import { useI18n } from '../i18n/index.jsx';
 import { useProviderDetailRouter, providerHref, PROVIDER_TABS, tabHref } from '../hooks/useTabRouter';
 import AuthorMark from './AuthorMark';
+import ShareMenu from './ShareMenu';
 import '../directory.css';
 
 const COLORS = ['forest', 'sage', 'clay', 'sand', 'blue', 'olive'];
@@ -208,14 +209,24 @@ function ProviderCard({ seller, stats, t, onOpen, featured }) {
     return <div className={`dir-card dir-${look.color} is-disabled`} title={t('providers.noAgent')}>{inner}</div>;
   }
   return (
-    <a
+    <div
       className={`dir-card dir-${look.color}${featured ? ' is-featured' : ''}`}
       title={featured ? t('providers.highlightedHint') : undefined}
-      href={providerHref(agentId)}
-      onClick={(e) => { e.preventDefault(); onOpen(agentId); }}
     >
-      {inner}
-    </a>
+      <a
+        className="dir-card__link"
+        href={providerHref(agentId)}
+        onClick={(e) => { e.preventDefault(); onOpen(agentId); }}
+      >
+        {inner}
+      </a>
+      <ShareMenu
+        iconOnly
+        className="dir-card__share"
+        path={providerHref(agentId)}
+        title={t('share.providerTitle', { name: seller.name || t('stake.agent', { id: agentId }) })}
+      />
+    </div>
   );
 }
 
@@ -406,7 +417,13 @@ function ProviderDetail({ agentId, seller, stats, loadingList, tab, setTab, t, o
 
   return (
     <div className="directory-page wrap">
-      <button type="button" className="dir-back" onClick={onBack}>{t('providers.back')}</button>
+      <div className="dir-toolbar">
+        <button type="button" className="dir-back" onClick={onBack}>{t('providers.back')}</button>
+        <ShareMenu
+          path={providerHref(agentId)}
+          title={t('share.providerTitle', { name: seller.name || t('stake.agent', { id: agentId }) })}
+        />
+      </div>
 
       <article className={`dir-profile dir-${look.color}`}>
         <div className="dir-cover">

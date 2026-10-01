@@ -15,6 +15,7 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import PositionCertificate from './PositionCertificate';
+import ShareMenu from './ShareMenu';
 import { fetchSellers, fetchLantsMarket, fetchLantsOffers, postLantsTrade, fetchLantsTrades } from '../api';
 import { useI18n } from '../i18n/index.jsx';
 import { useMarketTabRouter, marketTabHref, useLantsDetailRouter, lantsDetailHref } from '../hooks/useTabRouter';
@@ -1355,7 +1356,14 @@ function LantsV2Card({
     >
       <div className="v2-card__top">
         <span className="v2-card__number">lANTS / #{row.nftId}</span>
-        <span className="v2-card__status">{row.state || 'Pending start'}</span>
+        <div className="v2-card__top-right">
+          <ShareMenu
+            iconOnly
+            path={detailHref || lantsDetailHref(p.id)}
+            title={t('share.lantsTitle', { id: String(p.id) })}
+          />
+          <span className="v2-card__status">{row.state || 'Pending start'}</span>
+        </div>
       </div>
       <div className="v2-card__main">
         <div className="v2-card__pool"><span className="v2-pool-icon">a</span>{row.provider || 'antseed'}<span>↗</span></div>
@@ -1521,6 +1529,11 @@ function LantsMarketTable({ items, market, cardProps, onOpenDetail, t, lang }) {
                 <td>{row.value != null ? formatUsdc(row.value) : formatOfferTotal(p.bestOffer)}</td>
                 <td>
                   <div className="lants-market-table__actions">
+                    <ShareMenu
+                      iconOnly
+                      path={lantsDetailHref(p.id)}
+                      title={t('share.lantsTitle', { id: String(p.id) })}
+                    />
                     {props.canBuy && (
                       <button
                         type="button"
@@ -1541,7 +1554,6 @@ function LantsMarketTable({ items, market, cardProps, onOpenDetail, t, lang }) {
                         Make offer
                       </button>
                     )}
-                    {!props.canBuy && !props.canOffer && <span className="lants-market-table__muted">—</span>}
                     {props.buyState?.message && props.buyState.phase !== 'error' && (
                       <span className="lants-market-table__muted">
                         {props.buyState.message}
@@ -1604,6 +1616,10 @@ function LantsNftCard({
           </label>
         )}
         <div className="lants-nft__links">
+          <ShareMenu
+            path={detailHref || lantsDetailHref(p.id)}
+            title={t('share.lantsTitle', { id: String(p.id) })}
+          />
           {canList && setListForm && (
             <button
               type="button"
@@ -1735,6 +1751,10 @@ function LantsDetailPanel({ tokenId, item, loading, error, backHref, onBack, car
           </a>
           <h3>{t('stake.detailTitle', { id: tokenId })}</h3>
         </div>
+        <ShareMenu
+          path={lantsDetailHref(tokenId)}
+          title={t('share.lantsTitle', { id: String(tokenId) })}
+        />
       </div>
       {loading && (
         <div className="lants-detail__status">

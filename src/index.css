@@ -2365,6 +2365,11 @@ html[data-ui-style="v2"] body {
   justify-content: space-between;
   border-bottom: 1px solid #dcded1;
 }
+.v2-card__top-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
 .v2-card__number {
   font-family: var(--font-data);

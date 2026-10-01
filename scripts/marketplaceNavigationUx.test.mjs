@@ -25,6 +25,7 @@ assert.match(v2Card, /<article[\s\S]*className="v2-card"[\s\S]*onClick=\{open\}/
 assert.doesNotMatch(v2Card, /t\('stake\.viewDetails'\)/, 'V2 marketplace cards should not show a redundant details button');
 assert.match(v2Card, /onClick=\{\(e\) => \{ e\.stopPropagation\(\); onBuy\?\.\(\); \}\}/, 'Buy action should not also trigger card navigation');
 assert.match(v2Card, /onClick=\{\(e\) => \{ e\.stopPropagation\(\); onOpenOffer\?\.\(p\); \}\}/, 'Offer action should not also trigger card navigation');
+assert.match(v2Card, /<ShareMenu/, 'V2 marketplace cards expose a share control for the detail URL');
 
 assert.match(designCss, /\.dashboard\[data-ui-style="v2"\] \.app-header\s*\{[\s\S]*position: sticky;[\s\S]*top: 0;[\s\S]*z-index: 1200;/, 'V2 design header should keep the live sticky/floating navigation instead of downgrading it to relative positioning');
 assert.doesNotMatch(designCss, /\.dashboard\[data-ui-style="v2"\] \.app-header\s*\{[\s\S]*position: relative;/, 'Design integration must not override the sticky header from the live app');

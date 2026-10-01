@@ -10,6 +10,7 @@ import {
 import { useI18n } from '../i18n/index.jsx';
 import { providerHref } from '../hooks/useTabRouter';
 import AuthorMark from './AuthorMark';
+import ShareMenu from './ShareMenu';
 import '../directory.css';
 
 const PITCH_MIN = 20;
@@ -83,16 +84,22 @@ function PitchCard({ item, t, threshold, access, address, onVote, voting, voteEr
       <p className="discovery-pitch">{item.pitch}</p>
       <ServiceTable services={item.services} t={t} />
       <footer>
-        <a
-          className="v2-text-button"
-          href={providerHref(item.agentId)}
-          onClick={(e) => {
-            e.preventDefault();
-            onOpen(item.agentId);
-          }}
-        >
-          {t('discovery.openProvider')}
-        </a>
+        <div className="discovery-share-row">
+          <a
+            className="v2-text-button"
+            href={providerHref(item.agentId)}
+            onClick={(e) => {
+              e.preventDefault();
+              onOpen(item.agentId);
+            }}
+          >
+            {t('discovery.openProvider')}
+          </a>
+          <ShareMenu
+            path={providerHref(item.agentId)}
+            title={t('share.providerTitle', { name: item.name || t('stake.agent', { id: item.agentId }) })}
+          />
+        </div>
         <div className="discovery-vote-row">
           {!address && <p>{t('discovery.connectVote')}</p>}
           {address && !access?.isBuyer && !access?.isStaker && !isOwner && (

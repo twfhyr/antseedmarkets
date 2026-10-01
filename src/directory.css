@@ -179,6 +179,7 @@
 }
 .dir-grid.is-list { grid-template-columns: 1fr; }
 .dir-card {
+  position: relative;
   border: 1px solid var(--line);
   background: var(--bg-card);
   border-radius: 5px;
@@ -190,12 +191,29 @@
   text-decoration: none;
   transition: transform .2s, box-shadow .2s, border-color .2s;
 }
-a.dir-card:hover {
+.dir-card__link {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+.dir-card:not(.is-disabled):hover {
   transform: translateY(-3px);
   border-color: color-mix(in srgb, var(--soft-accent) 40%, var(--line));
   box-shadow: 0 8px 20px rgba(52, 73, 44, 0.06);
 }
 .dir-card.is-disabled { opacity: .72; cursor: default; }
+.dir-card__share {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 3;
+}
+.dir-card__share .share-menu__btn {
+  background: color-mix(in srgb, var(--bg-card) 88%, transparent);
+}
 
 .dir-forest { --cover: #dfe7d9; --motif: #718b67; --mark: #375941; --logo: #f0f3e9; --cover-ink: #587151; }
 .dir-sage { --cover: #e7ecdf; --motif: #879379; --mark: #70815e; --logo: #f5f5ed; --cover-ink: #78856d; }
@@ -302,7 +320,8 @@ a.dir-card:hover {
 }
 .dir-card-footer span:last-child { font-size: 9px; font-family: var(--font-ui); letter-spacing: 0; color: var(--accent); font-weight: 500; }
 
-.dir-grid.is-list .dir-card { display: grid; grid-template-columns: 115px 1fr; }
+.dir-grid.is-list .dir-card { display: block; }
+.dir-grid.is-list .dir-card__link { display: grid; grid-template-columns: 115px 1fr; }
 .dir-grid.is-list .dir-art-block { height: 100%; grid-row: span 2; }
 .dir-grid.is-list .dir-art-label { display: none; }
 .dir-grid.is-list .dir-logo {
@@ -405,6 +424,13 @@ a.dir-card:hover {
 }
 .dir-fact strong { font-weight: 500; color: var(--ink); }
 .dir-facts-note { font-size: 10px; color: var(--muted); line-height: 1.7; margin: 16px 0 0; }
+.dir-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0 16px;
+}
 .dir-back {
   border: 0;
   background: none;
@@ -413,6 +439,7 @@ a.dir-card:hover {
   padding: 0;
   margin: 20px 0 16px;
 }
+.dir-toolbar .dir-back { margin: 0; }
 
 html[data-theme="terminal"] .dir-forest,
 html[data-theme="terminal"] .dir-sage,
@@ -594,6 +621,12 @@ html[data-theme="terminal"] .dir-core { box-shadow: 0 0 16px #48e0bc66, 0 0 0 13
   gap: 12px;
   flex-wrap: wrap;
   margin-top: 12px;
+}
+.discovery-share-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 .discovery-vote-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .discovery-vote-row p { margin: 0; color: var(--muted); font-size: 12px; }

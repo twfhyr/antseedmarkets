@@ -26,6 +26,11 @@ prototype in [`provider/`](provider/README.md). Live listings are the DHT
 catalog (`GET /api/sellers`), not the fictional sample profiles in that
 folder.
 
+lANTS and provider cards (and their detail pages) have a Share menu that
+builds the existing detail URL so users do not copy the address bar.
+Targets are X, Telegram, Discord (copy to paste), and Copy link. See
+[`docs/SHARE.md`](docs/SHARE.md).
+
 Everything else that lives in antseed-zh (Overview, Buyers, Sellers,
 Stakers, Services, Tokenomics, $ANTS Info, Rewards, Chat, Town Board,
 About) stays there. Nothing here is a fork of that repo -- it's a fresh,
