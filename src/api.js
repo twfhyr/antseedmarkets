@@ -30,8 +30,9 @@ export async function fetchSellers() {
 /**
  * lANTS NFT market, paginated/filtered/sorted server-side. `params` may
  * include: page, pageSize, sort ('id'|'amount'|'lockDays'|'daysRemaining'|
- * 'price'), dir ('asc'|'desc'), owner, agentId, minAmount, maxAmount,
- * minLockDays, maxLockDays, listed ('1' for listed-only), wait ('1' to
+ * 'price'|'offer'), dir ('asc'|'desc'), owner, agentId, minAmount, maxAmount,
+ * minLockDays, maxLockDays, listed ('1' for listed-only), offered ('1' for
+ * tokens with at least one open offer), wait ('1' to
  * force a synchronous refresh instead of stale-while-revalidate).
  */
 export async function fetchLantsMarket(params = {}) {
@@ -133,6 +134,11 @@ export async function fetchProviderBuyerCounts() {
   return get('/providers/buyer-counts');
 }
 
+/** Comment contest ranking. Scores come from stored comments, not estimates. */
+export async function fetchCommentLeaderboard() {
+  return get('/providers/comment-leaderboard');
+}
+
 export async function fetchProviderAccess(agentId, address) {
   const q = address ? `?address=${encodeURIComponent(address)}` : '';
   return get(`/providers/${encodeURIComponent(agentId)}/access${q}`);
@@ -161,4 +167,28 @@ export async function postProviderAnnouncement(agentId, body) {
 
 export async function postProviderChat(agentId, body) {
   return post(`/providers/${encodeURIComponent(agentId)}/chat`, body);
+}
+
+export async function fetchProfile(address) {
+  return get(`/profiles/${encodeURIComponent(address)}`);
+}
+
+export async function fetchProfiles(addresses) {
+  const list = [...new Set((addresses || []).filter(Boolean).map((a) => String(a).toLowerCase()))];
+  if (list.length === 0) return { items: {} };
+  return get(`/profiles?addresses=${encodeURIComponent(list.join(','))}`);
+}
+
+export async function checkNickname(name, address) {
+  const qs = new URLSearchParams({ name });
+  if (address) qs.set('address', address);
+  return get(`/profiles/check-nickname?${qs}`);
+}
+
+export async function saveProfile(body) {
+  return post('/profiles', body);
+}
+
+export async function fetchUsedProviders(address) {
+  return get(`/profiles/${encodeURIComponent(address)}/providers`);
 }

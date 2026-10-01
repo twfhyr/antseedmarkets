@@ -14,6 +14,10 @@ const designCss = read('src/design.css');
 assert.match(stake, /const marketTabsRef = useRef\(null\)/, 'StakeANTS should keep a ref for the marketplace subtabs');
 assert.match(stake, /marketTabsRef\.current\?\.scrollIntoView\(\{ behavior: 'smooth', block: 'start' \}\)/, 'Explore should smooth-scroll to the marketplace subtabs');
 assert.match(stake, /<div className="lants-subtabs" ref=\{marketTabsRef\}>/, 'Marketplace subtabs should be the explore scroll target');
+assert.match(stake, /label=\{t\('stake.filterMine'\)\}/, 'Mine should be a visible marketplace subtab, not only reachable from Portfolio');
+assert.match(stake, /href=\{marketTabHref\('mine'\)\}/, 'Mine subtab should keep the existing /lants/mine URL');
+assert.match(stake, /label=\{t\('stake.filterOffered'\)\}/, 'Offered should be a visible marketplace subtab after For sale');
+assert.match(stake, /href=\{marketTabHref\('offered'\)\}/, 'Offered subtab should use /lants/offered');
 assert.match(stake, /<AntseedV2Hero market=\{market\} onExplore=\{scrollToMarketTabs\}/, 'V2 hero explore action should scroll to the marketplace tabs');
 
 const v2Card = stake.match(/function LantsV2Card[\s\S]*?function LantsStatsPanel/)?.[0] || '';

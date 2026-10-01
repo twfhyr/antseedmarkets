@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Github } from 'lucide-react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { useDisconnect } from 'wagmi';
+import { fetchProfile } from '../api';
 import { tabHref } from '../hooks/useTabRouter';
+import { useI18n } from '../i18n/index.jsx';
 
 function AntLogo() {
   return (
@@ -29,9 +32,136 @@ function HeaderNavLink({ tab, activeTab, setActiveTab, children }) {
   );
 }
 
-// English-only, plain strings -- no useI18n() here, this component isn't
-// shared with antseed-zh any more (see src/i18n/index.jsx's comment for
-// why the lookup layer still exists elsewhere in this repo).
+function WalletMenu({ setActiveTab }) {
+  const { t } = useI18n();
+  const { disconnect } = useDisconnect();
+  const [open, setOpen] = useState(false);
+  const [profile, setProfile] = useState(null);
+  const rootRef = useRef(null);
+
+  useEffect(() => {
+    const onDoc = (event) => {
+      if (!rootRef.current?.contains(event.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, []);
+
+  return (
+    <ConnectButton.Custom>
+      {({ account, mounted, openAccountModal, openConnectModal }) => {
+        const connected = mounted && account;
+        const address = account?.address;
+        return (
+          <WalletMenuInner
+            connected={connected}
+            address={address}
+            displayName={account?.displayName}
+            open={open}
+            setOpen={setOpen}
+            profile={profile}
+            setProfile={setProfile}
+            rootRef={rootRef}
+            openConnectModal={openConnectModal}
+            openAccountModal={openAccountModal}
+            disconnect={disconnect}
+            setActiveTab={setActiveTab}
+            t={t}
+          />
+        );
+      }}
+    </ConnectButton.Custom>
+  );
+}
+
+function WalletMenuInner({
+  connected, address, displayName, open, setOpen, profile, setProfile, rootRef,
+  openConnectModal, openAccountModal, disconnect, setActiveTab, t,
+}) {
+  useEffect(() => {
+    let live = true;
+    if (!connected || !address) {
+      setProfile(null);
+      return undefined;
+    }
+    const load = () => {
+      fetchProfile(address)
+        .then((row) => {
+          if (!live) return;
+          setProfile(row?.exists ? row : null);
+        })
+        .catch(() => {
+          if (!live) return;
+          setProfile(null);
+        });
+    };
+    load();
+    window.addEventListener('antseed:profile', load);
+    return () => {
+      live = false;
+      window.removeEventListener('antseed:profile', load);
+    };
+  }, [connected, address, setProfile]);
+
+  if (!connected) {
+    return (
+      <button type="button" className="wallet-chip" onClick={openConnectModal}>
+        {t('providers.connectWallet')}
+      </button>
+    );
+  }
+
+  const label = profile?.nickname || displayName || address.slice(0, 6);
+  return (
+    <div className="wallet-menu" ref={rootRef}>
+      <button
+        type="button"
+        className="wallet-chip"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+      >
+        {profile?.avatarUrl ? <img src={profile.avatarUrl} alt="" width={18} height={18} /> : null}
+        <span>{label}</span>
+      </button>
+      {open && (
+        <div className="wallet-menu__list" role="menu">
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              setActiveTab('profile');
+            }}
+          >
+            {t('profile.menuProfile')}
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              openAccountModal();
+            }}
+          >
+            {t('profile.menuWallet')}
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              disconnect();
+            }}
+          >
+            {t('profile.menuDisconnect')}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Header({ activeTab = 'stake', setActiveTab = () => {}, uiStyle = 'v2', theme = 'editorial', setTheme = () => {} }) {
   return (
     <header className="app-header">
@@ -61,6 +191,7 @@ function Header({ activeTab = 'stake', setActiveTab = () => {}, uiStyle = 'v2', 
         <nav className="app-header__nav" aria-label="Primary navigation">
           <HeaderNavLink tab="stake" activeTab={activeTab} setActiveTab={setActiveTab}>lANTS</HeaderNavLink>
           <HeaderNavLink tab="providers" activeTab={activeTab} setActiveTab={setActiveTab}>Providers</HeaderNavLink>
+          <HeaderNavLink tab="leaderboard" activeTab={activeTab} setActiveTab={setActiveTab}>Leaderboard</HeaderNavLink>
           <HeaderNavLink tab="portfolio" activeTab={activeTab} setActiveTab={setActiveTab}>Portfolio</HeaderNavLink>
           <HeaderNavLink tab="rewards" activeTab={activeTab} setActiveTab={setActiveTab}>Rewards</HeaderNavLink>
         </nav>
@@ -94,7 +225,7 @@ function Header({ activeTab = 'stake', setActiveTab = () => {}, uiStyle = 'v2', 
         >
           <Github size={16} />
         </a>
-        <ConnectButton showBalance={false} chainStatus="none" accountStatus="address" />
+        <WalletMenu setActiveTab={setActiveTab} />
       </div>
     </header>
   );

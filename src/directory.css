@@ -442,7 +442,74 @@ html[data-theme="terminal"] .dir-core { box-shadow: 0 0 16px #48e0bc66, 0 0 0 13
   .dir-art { height: 260px; }
   .dir-columns { grid-template-columns: 1fr; gap: 24px; padding: 24px; }
   .dir-join { grid-template-columns: 1fr; gap: 16px; }
+  .dir-rules { grid-template-columns: 1fr; }
 }
+.dir-prize {
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--green) 16%, var(--bg-card));
+  padding: 20px 24px;
+  margin: 8px 0 8px;
+}
+.dir-prize p { margin: 8px 0 0; font-size: 14px; line-height: 1.6; }
+.dir-prize p:first-of-type { margin-top: 10px; }
+.dir-rules {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin: 22px 0 8px;
+}
+.dir-rule {
+  border: 1px solid var(--line);
+  background: var(--bg-card);
+  padding: 18px 20px;
+}
+.dir-rule h3 {
+  font-family: var(--font-ui);
+  font-size: 16px;
+  font-weight: 550;
+  letter-spacing: -.4px;
+  margin: 0 0 8px;
+}
+.dir-rule p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--muted);
+}
+.dir-board { margin-top: 28px; overflow-x: auto; }
+.dir-board-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.dir-board-table th {
+  text-align: left;
+  font-size: 11px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  font-weight: 550;
+}
+.dir-board-table td {
+  padding: 14px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+  vertical-align: middle;
+}
+.dir-board-table tr.is-prize td:first-child { color: var(--accent); font-weight: 550; }
+.dir-board-table tr.is-you { background: color-mix(in srgb, var(--green) 14%, transparent); }
+.dir-you {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 10px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-family: var(--font-ui);
+}
+.dir-empty a { color: var(--accent); }
+
 @media (max-width: 700px) {
   .dir-grid { grid-template-columns: 1fr; }
   .dir-hero h1 { font-size: 40px; }
@@ -452,4 +519,5 @@ html[data-theme="terminal"] .dir-core { box-shadow: 0 0 16px #48e0bc66, 0 0 0 13
   .dir-cover { height: 140px; }
   .dir-grid.is-list .dir-card { grid-template-columns: 1fr; }
   .dir-grid.is-list .dir-art-block { height: 90px; grid-row: auto; }
+  .dir-rules { grid-template-columns: 1fr; }
 }

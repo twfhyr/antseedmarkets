@@ -147,6 +147,25 @@ const currencyForToken = (addr) => {
   return '';
 };
 
+function formatOfferPerAnt(offer) {
+  if (!offer) return '—';
+  if (offer.perAntUsd != null) return `${formatUsdc(offer.perAntUsd)} / ANTS`;
+  if (offer.perAnt != null) {
+    const n = Number(offer.perAnt);
+    if (!Number.isFinite(n)) return '—';
+    const symbol = normalizeCurrency(offer.currency) || '';
+    const formatted = n.toLocaleString(undefined, { maximumFractionDigits: 8 });
+    return symbol ? `${formatted} ${symbol} / ANTS` : `${formatted} / ANTS`;
+  }
+  return '—';
+}
+
+function formatOfferTotal(offer) {
+  if (!offer) return '—';
+  if (offer.usd != null) return formatUsdc(offer.usd);
+  return formatTradeAmount(offer.priceWei, offer.currency);
+}
+
 // Listings/offers created on this site are USDC-denominated (see
 // src/lib/listLants.js), so the total is already a real USD amount, not a
 // converted one -- just show it directly. Deliberately never renders a raw
@@ -324,8 +343,9 @@ function StakeANTS({ uiStyle = 'classical' }) {
   const marketQuery = useMemo(() => ({
     page: marketPage,
     pageSize: MARKET_PAGE_SIZE,
-    sort: marketSort,
+    sort: marketTab === 'offered' && marketSort === 'price' ? 'offer' : marketSort,
     listed: marketTab === 'listed' ? '1' : undefined,
+    offered: marketTab === 'offered' ? '1' : undefined,
     owner: marketTab === 'mine' ? address : undefined,
     agentId: marketFilters.agentId || undefined,
     minAmount: marketFilters.minAmount || undefined,
@@ -347,7 +367,11 @@ function StakeANTS({ uiStyle = 'classical' }) {
       setMarketError(false);
       return;
     }
-    if (marketTab === 'mine' && !address) return;
+    if (marketTab === 'mine' && !address) {
+      setMarketLoading(false);
+      setMarketError(false);
+      return;
+    }
     let cancelled = false;
     setMarketLoading(true);
     setMarketError(false);
@@ -943,12 +967,14 @@ function StakeANTS({ uiStyle = 'classical' }) {
               <span>{t('stake.marketError')}</span>
             </div>
           )}
-          {!marketLoading && (market || marketTab === 'history') && (
+          {!marketLoading && (market || marketTab === 'history' || marketTab === 'mine') && (
             <>
               <div className="lants-subtabs" ref={marketTabsRef}>
                 <div className="os-tabs" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                   <FilterChip active={marketTab === 'listed'} href={marketTabHref('listed')} onClick={() => setMarketTabAndReset('listed')} label={t('stake.filterListed')} />
+                  <FilterChip active={marketTab === 'offered'} href={marketTabHref('offered')} onClick={() => setMarketTabAndReset('offered')} label={t('stake.filterOffered')} />
                   <FilterChip active={marketTab === 'all'} href={marketTabHref('all')} onClick={() => setMarketTabAndReset('all')} label={t('stake.filterAll')} />
+                  <FilterChip active={marketTab === 'mine'} href={marketTabHref('mine')} onClick={() => setMarketTabAndReset('mine')} label={t('stake.filterMine')} />
                   <FilterChip active={marketTab === 'stats'} href={marketTabHref('stats')} onClick={() => setMarketTabAndReset('stats')} label={t('stake.filterStats')} />
                   <FilterChip active={marketTab === 'history'} href={marketTabHref('history')} onClick={() => setMarketTabAndReset('history')} label={t('stake.filterHistory')} />
                 </div>
@@ -957,6 +983,11 @@ function StakeANTS({ uiStyle = 'classical' }) {
               {marketTab === 'listed' && market?.listedCount === 0 && (
                 <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
                   {t('stake.noneListed')}
+                </div>
+              )}
+              {marketTab === 'offered' && market?.offeredCount === 0 && (
+                <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+                  {t('stake.noneOffered')}
                 </div>
               )}
 
@@ -1021,12 +1052,16 @@ function StakeANTS({ uiStyle = 'classical' }) {
                     && ` — ${t('stake.mergeResult', { id: mergeState.result.newPositionId })}`}
                 </div>
               )}
-              {mineBlocks.length === 0 && (
+              {!address ? (
+                <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', margin: '1rem 0' }}>
+                  {t('stake.mineNeedWallet')}
+                </div>
+              ) : mineBlocks.length === 0 && (
                 <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', margin: '1rem 0' }}>
                   {t('stake.mineEmpty')}
                 </div>
               )}
-              {mineBlocks.length > 0 && (
+              {address && mineBlocks.length > 0 && (
                 <div className="lants-nft-grid">
                   {mineBlocks.map((block) => block.type === 'single' ? (
                     <LantsNftCard key={`m-${block.item.id}`} position={block.item} {...commonCardProps(block.item)} />
@@ -1086,6 +1121,7 @@ function StakeANTS({ uiStyle = 'classical' }) {
                     <option value="lockDays">{t('stake.sortLockDays')}</option>
                     <option value="daysRemaining">{t('stake.sortRemaining')}</option>
                     <option value="price">{t('stake.sortPrice')}</option>
+                    <option value="offer">{t('stake.sortOffer')}</option>
                   </select>
                 </label>
                 <button type="button" className="lants-filters__apply" onClick={() => setMarketFiltersAndReset(filterDraft)}>
@@ -1110,7 +1146,7 @@ function StakeANTS({ uiStyle = 'classical' }) {
                 </button>
               </div>
 
-              {marketItems.length === 0 && (
+              {marketItems.length === 0 && !(marketTab === 'offered' && (market?.offeredCount || 0) === 0) && (
                 <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', margin: '1rem 0' }}>
                   {t('stake.noneMatch')}
                 </div>
@@ -1118,7 +1154,7 @@ function StakeANTS({ uiStyle = 'classical' }) {
               {marketItems.length > 0 && marketViewMode === 'cards' && (
                 <div className="lants-nft-grid">
                   {marketItems.map((p) => (isV2 ? (
-                    <LantsV2Card key={`m-${p.id}`} position={p} market={market} {...commonCardProps(p)} />
+                    <LantsV2Card key={`m-${p.id}`} position={p} market={market} showOfferList={marketTab === 'offered'} {...commonCardProps(p)} />
                   ) : (
                     <LantsNftCard key={`m-${p.id}`} position={p} {...commonCardProps(p)} />
                   )))}
@@ -1293,7 +1329,7 @@ function AntseedV2How() {
 
 function LantsV2Card({
   position: p, market, seller, currentEpoch, genesis, epochDuration, t, lang, listing, onBuy, onPrewarmBuy, canBuy, buyState,
-  onOpenOffer, canOffer, detailHref, onOpenDetail,
+  onOpenOffer, canOffer, detailHref, onOpenDetail, showOfferList, isOwner, address, onAcceptOffer, onCancelOffer, offerActionState,
 }) {
   const dates = epochDates(p.stakeStartEpoch, p.stakeEndEpoch, genesis, epochDuration);
   const startDate = p.startDate ?? dates.startDate;
@@ -1303,6 +1339,7 @@ function LantsV2Card({
     { currentEpoch: market?.currentEpoch ?? currentEpoch, sellers: market?.sellers || [] }
   );
   const buyBusy = buyState?.phase === 'buying';
+  const offers = p.offers || [];
   const open = (e) => {
     if (!onOpenDetail) return;
     e?.preventDefault?.();
@@ -1330,6 +1367,15 @@ function LantsV2Card({
       </div>
       <div className="v2-card__bottom">
         <div className="v2-card__price-row"><div><span className="v2-card__ask-label">Asking price</span><div className="v2-card__price">{formatUsdc(row.value)}</div></div><span className="v2-card__unit-price">{formatUsdc(row.pricePerAnt)} / ANTS</span></div>
+        {showOfferList && p.bestOffer && (
+          <div className="v2-card__price-row">
+            <div>
+              <span className="v2-card__ask-label">{t('stake.bestOffer')}</span>
+              <div className="v2-card__price">{formatOfferPerAnt(p.bestOffer)}</div>
+            </div>
+            <span className="v2-card__unit-price">{t('stake.viewOffers', { n: String(p.offerCount || offers.length) })}</span>
+          </div>
+        )}
         <div className="v2-card__actions">
           {canBuy && (
             <button
@@ -1350,6 +1396,34 @@ function LantsV2Card({
         {buyState?.message && buyState.phase !== 'error' && (
           <div className="v2-position-button__message">
             {buyState.message}
+          </div>
+        )}
+        {showOfferList && (
+          <div className="v2-card__offers" onClick={(e) => e.stopPropagation()}>
+            <h4>{t('stake.openOffers')}</h4>
+            {offers.length === 0 && <p className="v2-card__offers-empty">{t('stake.noOffers')}</p>}
+            {offers.map((o) => {
+              const mine = address && o.offerer && o.offerer.toLowerCase() === address.toLowerCase();
+              const busy = offerActionState?.offerId === o.id && ['accepting', 'cancelling'].includes(offerActionState.phase);
+              return (
+                <div key={o.id} className="v2-card__offer">
+                  <div>
+                    <strong>{formatOfferPerAnt(o)}</strong>
+                    <span className="v2-card__offer-meta">{t('stake.offerTotal', { total: formatOfferTotal(o) })} · {truncateAddress(o.offerer)}</span>
+                  </div>
+                  {isOwner && onAcceptOffer && (
+                    <button type="button" className="v2-position-button v2-position-button--buy" onClick={() => onAcceptOffer(o)} disabled={busy}>
+                      {busy ? <Loader2 size={11} className="spin" /> : null}{t('stake.acceptOffer')}
+                    </button>
+                  )}
+                  {mine && !isOwner && onCancelOffer && (
+                    <button type="button" className="v2-position-button v2-position-button--offer" onClick={() => onCancelOffer(o)} disabled={busy}>
+                      {busy ? <Loader2 size={11} className="spin" /> : null}{t('stake.cancelOffer')}
+                    </button>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -1440,8 +1514,11 @@ function LantsMarketTable({ items, market, cardProps, onOpenDetail, t, lang }) {
                 <td>{formatAnts(row.lockedAmount)}</td>
                 <td>{dateFmt(row.startDate, lang)}</td>
                 <td>{dateFmt(row.endDate, lang)}</td>
-                <td>{formatUsdc(row.pricePerAnt)}</td>
-                <td>{formatUsdc(row.value)}</td>
+                <td>
+                  {row.pricePerAnt != null ? formatUsdc(row.pricePerAnt) : formatOfferPerAnt(p.bestOffer)}
+                  {p.offerCount ? <div className="lants-market-table__muted">{t('stake.viewOffers', { n: String(p.offerCount) })}</div> : null}
+                </td>
+                <td>{row.value != null ? formatUsdc(row.value) : formatOfferTotal(p.bestOffer)}</td>
                 <td>
                   <div className="lants-market-table__actions">
                     {props.canBuy && (

@@ -13,7 +13,8 @@ import {
   postProviderChat,
 } from '../api';
 import { useI18n } from '../i18n/index.jsx';
-import { useProviderDetailRouter, providerHref, PROVIDER_TABS } from '../hooks/useTabRouter';
+import { useProviderDetailRouter, providerHref, PROVIDER_TABS, tabHref } from '../hooks/useTabRouter';
+import AuthorMark from './AuthorMark';
 import '../directory.css';
 
 const COLORS = ['forest', 'sage', 'clay', 'sand', 'blue', 'olive'];
@@ -227,7 +228,7 @@ function FeedList({ items, empty, t, showRating }) {
       {items.map((item) => (
         <li key={item.id}>
           <div className="provider-feed__meta">
-            <span className="mono">{short(item.author)}</span>
+            <AuthorMark address={item.author} profile={item.profile} />
             <RolePills roles={item.roles} t={t} />
             {showRating && item.rating != null && <Stars value={item.rating} size={12} />}
             <time dateTime={new Date(item.createdAt).toISOString()}>{fmtTime(item.createdAt)}</time>
@@ -474,20 +475,28 @@ function ProviderDetail({ agentId, seller, stats, loadingList, tab, setTab, t, o
 
             {tab === 'comments' && (
               <section>
+                <p className="provider-hint">
+                  <a href={tabHref('leaderboard')}>{t('providers.contestHint')}</a>
+                </p>
                 <FeedList items={comments} empty={t('providers.commentsEmpty')} t={t} showRating />
                 {canComment ? (
-                  <Compose
-                    placeholder={t('providers.commentPlaceholder')}
-                    submitLabel={t('providers.commentPost')}
-                    postingLabel={t('providers.posting')}
-                    posting={posting === 'comment'}
-                    error={postError.comment}
-                    maxLength={2000}
-                    rating={rating}
-                    onRating={setRating}
-                    t={t}
-                    onSubmit={(body) => signAndPost('comment', body, (payload) => postProviderComment(agentId, { ...payload, rating }))}
-                  />
+                  <>
+                    {access?.identity && (
+                      <p className="provider-hint">{t('providers.shownAs', { addr: access.profile?.nickname || short(access.identity) })}</p>
+                    )}
+                    <Compose
+                      placeholder={t('providers.commentPlaceholder')}
+                      submitLabel={t('providers.commentPost')}
+                      postingLabel={t('providers.posting')}
+                      posting={posting === 'comment'}
+                      error={postError.comment}
+                      maxLength={2000}
+                      rating={rating}
+                      onRating={setRating}
+                      t={t}
+                      onSubmit={(body) => signAndPost('comment', body, (payload) => postProviderComment(agentId, { ...payload, rating }))}
+                    />
+                  </>
                 ) : (
                   <p className="provider-hint">{isConnected ? t('providers.commentNeedAccess') : t('providers.commentHint')}</p>
                 )}
@@ -502,16 +511,21 @@ function ProviderDetail({ agentId, seller, stats, loadingList, tab, setTab, t, o
                   <div ref={chatEndRef} />
                 </div>
                 {canChat ? (
-                  <Compose
-                    placeholder={t('providers.chatPlaceholder')}
-                    submitLabel={t('providers.chatSend')}
-                    postingLabel={t('providers.posting')}
-                    posting={posting === 'chat'}
-                    error={postError.chat}
-                    maxLength={500}
-                    t={t}
-                    onSubmit={(body) => signAndPost('chat', body, (payload) => postProviderChat(agentId, payload))}
-                  />
+                  <>
+                    {access?.identity && (
+                      <p className="provider-hint">{t('providers.shownAs', { addr: access.profile?.nickname || short(access.identity) })}</p>
+                    )}
+                    <Compose
+                      placeholder={t('providers.chatPlaceholder')}
+                      submitLabel={t('providers.chatSend')}
+                      postingLabel={t('providers.posting')}
+                      posting={posting === 'chat'}
+                      error={postError.chat}
+                      maxLength={500}
+                      t={t}
+                      onSubmit={(body) => signAndPost('chat', body, (payload) => postProviderChat(agentId, payload))}
+                    />
+                  </>
                 ) : (
                   <p className="provider-hint">{isConnected ? t('providers.chatNeedAccess') : t('providers.signedOut')}</p>
                 )}

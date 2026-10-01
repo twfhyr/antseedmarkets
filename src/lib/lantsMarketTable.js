@@ -4,7 +4,7 @@ export const LANTS_MARKET_DETAIL_FIELDS = [
   'id', 'ants', 'start', 'end', 'price', 'value',
   'owner', 'duration', 'provider', 'state', 'mc', 'fdv',
 ];
-export const LANTS_MARKET_TABS = ['listed', 'all', 'stats', 'history'];
+export const LANTS_MARKET_TABS = ['listed', 'offered', 'all', 'stats', 'history'];
 export const LANTS_ACTIVITY_VIEW_MODES = ['chart', 'table'];
 export const LANTS_MARKET_STATS_FIELDS = ['floor', 'mc', 'fdv', 'listed', 'collection'];
 

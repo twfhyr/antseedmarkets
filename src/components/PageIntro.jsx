@@ -19,6 +19,18 @@ const INTRO = {
     em: 'intelligence.',
     stamp: '04',
   },
+  leaderboard: {
+    eyebrow: 'LEADERBOARD / COMMENT CONTEST',
+    title: 'Use a provider,',
+    em: 'write it down.',
+    stamp: '05',
+  },
+  profile: {
+    eyebrow: 'PROFILE / YOUR NAME ON THIS MARKET',
+    title: 'Your name.',
+    em: 'Your story.',
+    stamp: '06',
+  },
 };
 
 export default function PageIntro({ page, description }) {

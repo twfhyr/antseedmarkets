@@ -3,6 +3,9 @@ import StakeANTS from './components/StakeANTS';
 import Portfolio from './components/Portfolio';
 import Rewards from './components/Rewards';
 import Providers from './components/Providers';
+import Leaderboard from './components/Leaderboard';
+import Profile from './components/Profile';
+import NicknameGate from './components/NicknameGate';
 import Header from './components/Header';
 import { useI18n } from './i18n/index.jsx';
 import { useTabRouter, tabHref } from './hooks/useTabRouter';
@@ -23,9 +26,8 @@ function AntseedV2Announcement() {
 // (locked ANTS position NFTs) -- split out of antseed-zh's monorepo
 // 2026-09-24 so this domain's identity, preview, and codebase are its own
 // rather than a build variant of the company dashboard. See README.md.
-// Three sections exist here (Rewards added 2026-09-24, ported from
-// antseed-zh's RewardsANTS.jsx) -- no nav-gating flag needed the way
-// antseed-zh.com's build variant used IS_MARKET_VARIANT.
+// Tabs: lANTS, Providers, Leaderboard, Portfolio, Rewards. No nav-gating
+// flag needed the way antseed-zh.com's build variant used IS_MARKET_VARIANT.
 function App() {
   const { t } = useI18n();
   // Auto-reloads this tab when a newer build is live (checked on tab
@@ -65,6 +67,13 @@ function App() {
             {t('nav.providers')}
           </a>
           <a
+            href={tabHref('leaderboard')}
+            className={`tab ${activeTab === 'leaderboard' ? 'active' : ''}`}
+            onClick={(e) => { e.preventDefault(); setActiveTab('leaderboard'); }}
+          >
+            {t('nav.leaderboard')}
+          </a>
+          <a
             href={tabHref('portfolio')}
             className={`tab ${activeTab === 'portfolio' ? 'active' : ''}`}
             onClick={(e) => { e.preventDefault(); setActiveTab('portfolio'); }}
@@ -82,9 +91,12 @@ function App() {
 
         {activeTab === 'stake' && <StakeANTS uiStyle={uiStyle} />}
         {activeTab === 'providers' && <Providers />}
+        {activeTab === 'leaderboard' && <Leaderboard />}
         {activeTab === 'portfolio' && <Portfolio />}
         {activeTab === 'rewards' && <Rewards />}
+        {activeTab === 'profile' && <Profile />}
       </main>
+      <NicknameGate />
       <footer className="design-footer wrap">
         <a href={tabHref('stake')} onClick={(e) => { e.preventDefault(); setActiveTab('stake'); }}>antseed<span>markets</span></a>
         <p>Built by ants, for ants.</p>

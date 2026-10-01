@@ -19,7 +19,7 @@ assert.deepEqual(LANTS_MARKET_DETAIL_FIELDS, [
   'id', 'ants', 'start', 'end', 'price', 'value',
   'owner', 'duration', 'provider', 'state', 'mc', 'fdv',
 ]);
-assert.deepEqual(LANTS_MARKET_TABS, ['listed', 'all', 'stats', 'history']);
+assert.deepEqual(LANTS_MARKET_TABS, ['listed', 'offered', 'all', 'stats', 'history']);
 assert.deepEqual(LANTS_ACTIVITY_VIEW_MODES, ['chart', 'table']);
 assert.deepEqual(LANTS_MARKET_STATS_FIELDS, ['floor', 'mc', 'fdv', 'listed', 'collection']);
 assert.equal(isMarketTableRowActivationKey('Enter'), true);

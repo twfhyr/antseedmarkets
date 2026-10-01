@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from 'react';
 // 'stake' (labelled "lANTS" in the UI, key kept from antseed-zh's history)
 // maps to the bare base path, so the root URL (antseedmarkets.com/) lands
 // directly on the marketplace by default.
-const TAB_PATHS = { stake: '', portfolio: 'portfolio', rewards: 'rewards', providers: 'providers' };
+const TAB_PATHS = { stake: '', portfolio: 'portfolio', rewards: 'rewards', providers: 'providers', leaderboard: 'leaderboard', profile: 'profile' };
 const PATH_TABS = Object.fromEntries(
   Object.entries(TAB_PATHS).filter(([, p]) => p).map(([tab, p]) => [p, tab])
 );
@@ -56,7 +56,11 @@ export function useTabRouter() {
   useEffect(() => {
     const onPopState = () => setActiveTabState(tabFromLocation());
     window.addEventListener('popstate', onPopState);
-    return () => window.removeEventListener('popstate', onPopState);
+    window.addEventListener('antseed:navigate', onPopState);
+    return () => {
+      window.removeEventListener('popstate', onPopState);
+      window.removeEventListener('antseed:navigate', onPopState);
+    };
   }, []);
 
   const setActiveTab = useCallback((tab) => {
@@ -72,12 +76,12 @@ export function useTabRouter() {
   return [activeTab, setActiveTab];
 }
 
-// ─── lANTS tab's own market sub-tab (/lants/sales, /lants/all, /lants/mine,
-// /lants/stats, /lants/history) ─────────────────────────────────────────
+// ─── lANTS tab's own market sub-tab (/lants/sales, /lants/offered, /lants/all,
+// /lants/mine, /lants/stats, /lants/history) ────────────────────────────
 // A second path segment under 'lants' only, so a filtered view of the
 // lANTS market is itself a shareable/bookmarkable link. Ported verbatim
 // from antseed-zh's useTabRouter.js (same reasoning, same sub-tab names).
-const MARKET_TAB_PATHS = { listed: 'sales', all: 'all', mine: 'mine', stats: 'stats', history: 'history' };
+const MARKET_TAB_PATHS = { listed: 'sales', offered: 'offered', all: 'all', mine: 'mine', stats: 'stats', history: 'history' };
 const MARKET_PATH_TABS = Object.fromEntries(
   Object.entries(MARKET_TAB_PATHS).map(([tab, p]) => [p, tab])
 );
@@ -179,8 +183,8 @@ export function useLantsDetailRouter() {
 
 // ─── Providers tab detail (/providers/:agentId[/announcement|comments|chat]) ───
 const PROVIDER_AGENT_RE = /^\d+$/;
-export const PROVIDER_TABS = ['announcement', 'comments', 'chat'];
-const PROVIDER_DEFAULT_TAB = 'announcement';
+export const PROVIDER_TABS = ['comments', 'announcement', 'chat'];
+const PROVIDER_DEFAULT_TAB = 'comments';
 
 function providerLocation() {
   const path = window.location.pathname;
