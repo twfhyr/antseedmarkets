@@ -17,7 +17,7 @@ assert.match(router, /profile: 'profile'/, 'Profile is a real URL tab, not only 
 assert.match(header, /profile\.menuProfile/, 'Wallet menu offers a jump to Profile');
 assert.match(header, /setActiveTab\('profile'\)/, 'Wallet menu navigates to /profile');
 assert.doesNotMatch(header, /HeaderNavLink tab="profile"/, 'Profile stays out of primary nav');
-assert.match(app, /<NicknameGate \/>/, 'First-connect nickname gate is mounted');
+assert.doesNotMatch(app, /<NicknameGate \/>/, 'Connecting a wallet does not require a nickname');
 assert.match(app, /activeTab === 'profile' && <Profile/, 'Profile page renders from the /profile tab');
 assert.match(gate, /profile\.gateTitle/, 'First-connect gate asks for a nickname');
 assert.match(gate, /disconnect\(\)/, 'Gate still lets the wallet disconnect');

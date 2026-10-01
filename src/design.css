@@ -163,6 +163,14 @@ html[data-theme="terminal"] .v2-art__caption { font-size: 7px; padding: 12px 0 0
 html[data-theme="terminal"] .v2-metrics { background: var(--bg-secondary); }
 html[data-theme="terminal"] .v2-metrics strong { font: 500 26px var(--font-data); }
 html[data-theme="terminal"] .v2-metrics p { font: 12px/1.8 var(--font-data); }
+html[data-theme="terminal"] .staking-desk__intro h2,
+html[data-theme="terminal"] .staking-pools__bar h3,
+html[data-theme="terminal"] .staking-form h3,
+html[data-theme="terminal"] .staking-ticker strong { font-family: var(--font-data); color: inherit; }
+html[data-theme="terminal"] .staking-form,
+html[data-theme="terminal"] .staking-pools__bar input { background: var(--bg-secondary); border-color: var(--line); color: inherit; }
+html[data-theme="terminal"] .staking-pools__table tr.is-selected td { background: #17333b66; }
+html[data-theme="terminal"] .staking-form .v2-position-button { background: var(--green); color: var(--accent); border-color: var(--green); }
 html[data-theme="terminal"] .dashboard[data-ui-style="v2"] .os-market { padding-top: 32px !important; }
 html[data-theme="terminal"] .v2-card { border-radius: 5px; background: linear-gradient(135deg,#111f2b,#0d161f) !important; }
 html[data-theme="terminal"] .dashboard[data-ui-style="v2"] .v2-card:hover { transform: none; }

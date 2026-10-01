@@ -12,9 +12,11 @@ const header = read('src/components/Header.jsx');
 const app = read('src/App.jsx');
 const discovery = read('src/components/Discovery.jsx');
 const providers = read('src/components/Providers.jsx');
+const nav = read('src/lib/nav.js');
 
 assert.match(router, /discovery: 'discovery'/, 'Discovery is a real URL tab');
-assert.match(header, /HeaderNavLink tab="discovery"/, 'Discovery sits in primary nav');
+assert.match(nav, /tab: 'discovery', hidden: true/, 'Discovery is temporarily hidden from primary nav');
+assert.match(header, /visiblePrimaryNav\(\)/, 'Header reads the shared visible-tab list');
 assert.match(app, /activeTab === 'discovery' && <Discovery/, 'Discovery page renders from /discovery');
 assert.match(discovery, /discovery\.voteBuyer/, 'Buyers get a distinct vote');
 assert.match(discovery, /discovery\.voteStaker/, 'Stakers get a distinct vote');

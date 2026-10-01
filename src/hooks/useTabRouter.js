@@ -3,10 +3,9 @@ import { useCallback, useEffect, useState } from 'react';
 // Tabs <-> URL path segments. Three tabs exist in this repo -- the lANTS
 // marketplace, a wallet's Portfolio, and Rewards (added 2026-09-24) -- see
 // README.md for why this is a separate, product-only repo from antseed-zh.
-// 'stake' (labelled "lANTS" in the UI, key kept from antseed-zh's history)
-// maps to the bare base path, so the root URL (antseedmarkets.com/) lands
-// directly on the marketplace by default.
-const TAB_PATHS = { stake: '', portfolio: 'portfolio', rewards: 'rewards', providers: 'providers', discovery: 'discovery', leaderboard: 'leaderboard', profile: 'profile' };
+// 'stake' (key kept from antseed-zh's history) maps to the bare base path,
+// so the root URL (antseedmarkets.com/) lands on the Stake desk by default.
+const TAB_PATHS = { stake: '', market: 'lants', portfolio: 'portfolio', rewards: 'rewards', providers: 'providers', discovery: 'discovery', leaderboard: 'leaderboard', profile: 'profile' };
 const PATH_TABS = Object.fromEntries(
   Object.entries(TAB_PATHS).filter(([, p]) => p).map(([tab, p]) => [p, tab])
 );
@@ -15,8 +14,7 @@ const PATH_TABS = Object.fromEntries(
 // legacy alias from a few hours on 2026-09-21 when antseed-zh briefly
 // called this tab "IANTS" before reverting to "lANTS" -- kept so any old
 // links out there still resolve instead of 404ing.
-PATH_TABS.lants = 'stake';
-PATH_TABS.iants = 'stake';
+PATH_TABS.iants = 'market';
 const DEFAULT_TAB = 'stake';
 const VALID_TABS = new Set(Object.keys(TAB_PATHS));
 
@@ -106,7 +104,7 @@ function marketTabFromLocation() {
   const path = window.location.pathname;
   const rel = path.startsWith(BASE) ? path.slice(BASE.length) : path.replace(/^\//, '');
   const [first, second] = rel.split('/');
-  if (first !== 'lants' && first !== 'iants' && first !== '') return null;
+  if (first !== 'lants' && first !== 'iants') return null;
   if (detailIdFromSegments(first, second, rel.split('/')[2]) != null) return 'all';
   return MARKET_PATH_TABS[second] || null;
 }
@@ -122,9 +120,9 @@ export function lantsDetailHref(tokenId) {
 
 /**
  * Drives the visible lANTS market tabs from the URL's second path segment.
- * Only meaningful while the lANTS tab
+ * Only meaningful while the Marketplace tab
  * itself is mounted -- StakeANTS.jsx only exists in the tree when
- * activeTab === 'stake', so every call here is implicitly scoped to that.
+ * activeTab === 'market', so every call here is implicitly scoped to that.
  */
 export function useMarketTabRouter() {
   const [marketTab, setMarketTabState] = useState(() => marketTabFromLocation() || MARKET_DEFAULT_TAB);
@@ -132,7 +130,11 @@ export function useMarketTabRouter() {
   useEffect(() => {
     const onPopState = () => setMarketTabState(marketTabFromLocation() || MARKET_DEFAULT_TAB);
     window.addEventListener('popstate', onPopState);
-    return () => window.removeEventListener('popstate', onPopState);
+    window.addEventListener('antseed:navigate', onPopState);
+    return () => {
+      window.removeEventListener('popstate', onPopState);
+      window.removeEventListener('antseed:navigate', onPopState);
+    };
   }, []);
 
   const setMarketTab = useCallback((tab) => {

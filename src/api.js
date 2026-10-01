@@ -27,6 +27,11 @@ export async function fetchSellers() {
   return get('/sellers');
 }
 
+/** Pool list + network totals for the Stake desk (`antseed ants` staking). */
+export async function fetchStakingOverview(wait = false) {
+  return get(`/staking/overview${wait ? '?wait=1' : ''}`);
+}
+
 /**
  * lANTS NFT market, paginated/filtered/sorted server-side. `params` may
  * include: page, pageSize, sort ('id'|'amount'|'lockDays'|'daysRemaining'|

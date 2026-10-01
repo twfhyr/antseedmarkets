@@ -956,6 +956,17 @@ function StakeANTS({ uiStyle = 'classical' }) {
       <div className="table-container os-market" style={{ padding: '2rem' }}>
         <div className="os-market__inner">
         <div style={{ marginBottom: '2.5rem' }}>
+              <div className="lants-subtabs" ref={marketTabsRef}>
+                <div className="os-tabs" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <FilterChip active={marketTab === 'listed'} href={marketTabHref('listed')} onClick={() => setMarketTabAndReset('listed')} label={t('stake.filterListed')} />
+                  <FilterChip active={marketTab === 'offered'} href={marketTabHref('offered')} onClick={() => setMarketTabAndReset('offered')} label={t('stake.filterOffered')} />
+                  <FilterChip active={marketTab === 'all'} href={marketTabHref('all')} onClick={() => setMarketTabAndReset('all')} label={t('stake.filterAll')} />
+                  <FilterChip active={marketTab === 'mine'} href={marketTabHref('mine')} onClick={() => setMarketTabAndReset('mine')} label={t('stake.filterMine')} />
+                  <FilterChip active={marketTab === 'stats'} href={marketTabHref('stats')} onClick={() => setMarketTabAndReset('stats')} label={t('stake.filterStats')} />
+                  <FilterChip active={marketTab === 'history'} href={marketTabHref('history')} onClick={() => setMarketTabAndReset('history')} label={t('stake.filterHistory')} />
+                </div>
+              </div>
+
           {marketLoading && (
             <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
               <Loader2 size={24} className="spin" />
@@ -970,17 +981,6 @@ function StakeANTS({ uiStyle = 'classical' }) {
           )}
           {!marketLoading && (market || marketTab === 'history' || marketTab === 'mine') && (
             <>
-              <div className="lants-subtabs" ref={marketTabsRef}>
-                <div className="os-tabs" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                  <FilterChip active={marketTab === 'listed'} href={marketTabHref('listed')} onClick={() => setMarketTabAndReset('listed')} label={t('stake.filterListed')} />
-                  <FilterChip active={marketTab === 'offered'} href={marketTabHref('offered')} onClick={() => setMarketTabAndReset('offered')} label={t('stake.filterOffered')} />
-                  <FilterChip active={marketTab === 'all'} href={marketTabHref('all')} onClick={() => setMarketTabAndReset('all')} label={t('stake.filterAll')} />
-                  <FilterChip active={marketTab === 'mine'} href={marketTabHref('mine')} onClick={() => setMarketTabAndReset('mine')} label={t('stake.filterMine')} />
-                  <FilterChip active={marketTab === 'stats'} href={marketTabHref('stats')} onClick={() => setMarketTabAndReset('stats')} label={t('stake.filterStats')} />
-                  <FilterChip active={marketTab === 'history'} href={marketTabHref('history')} onClick={() => setMarketTabAndReset('history')} label={t('stake.filterHistory')} />
-                </div>
-              </div>
-
               {marketTab === 'listed' && market?.listedCount === 0 && (
                 <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
                   {t('stake.noneListed')}

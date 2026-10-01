@@ -27,7 +27,13 @@ assert.match(header, /<span>Theme<\/span>/, 'Visible centred theme label');
 assert.match(header, /aria-pressed=\{theme === 'editorial'\}/, 'Editorial selection is accessible');
 assert.match(header, /aria-pressed=\{theme === 'terminal'\}/, 'Terminal selection is accessible');
 assert.match(header, /<ConnectButton/, 'Keep RainbowKit wallet connection, not a mock button');
-for (const tab of ['stake', 'providers', 'discovery', 'leaderboard', 'portfolio', 'rewards']) assert.ok(header.includes(`HeaderNavLink tab="${tab}"`));
+const nav = read('src/lib/nav.js');
+assert.match(header, /visiblePrimaryNav\(\)/, 'Header renders the visible primary tab list');
+assert.match(nav, /tab: 'stake', hidden: false/, 'Stake stays in the primary nav');
+assert.match(nav, /tab: 'market', hidden: false/, 'Marketplace sits next to Stake');
+for (const tab of ['providers', 'discovery', 'leaderboard', 'portfolio', 'rewards']) {
+  assert.match(nav, new RegExp(`tab: '${tab}', hidden: true`), `${tab} is temporarily hidden from primary nav`);
+}
 for (const component of ['AntseedV2Hero','AntseedV2Metrics','LantsV2Card','AntseedV2How']) assert.ok(stake.includes(`function ${component}`));
 assert.match(css, /html\[data-theme="terminal"\]/, 'Terminal styles are scoped');
 assert.match(css, /#f7f5ed/, 'Retain editorial paper');
