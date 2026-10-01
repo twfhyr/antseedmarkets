@@ -75,10 +75,19 @@ export default function Profile() {
         if (!live) return;
         setProfile(row);
         setLoadError(null);
-        if (row?.exists) {
+        if (row?.reserved && row.reservedNickname) {
+          setNickname(row.reservedNickname);
+        } else if (row?.exists) {
           setNickname(row.nickname || '');
+        } else {
+          setNickname('');
+        }
+        if (row?.exists) {
           setBio(row.bio || '');
           setAvatarPreview(row.avatarUrl || null);
+        } else {
+          setBio('');
+          setAvatarPreview(null);
         }
         setAvatarDataUrl(null);
         setClearAvatar(false);
@@ -113,7 +122,13 @@ export default function Profile() {
     return () => { live = false; };
   }, [address, t]);
 
+  const nicknameLocked = Boolean(profile?.nicknameLocked || profile?.reserved);
+
   useEffect(() => {
+    if (nicknameLocked) {
+      setAvailability({ available: true });
+      return undefined;
+    }
     const value = nickname.replace(/\s+/g, ' ').trim();
     if (!looksReady(value)) {
       setAvailability(null);
@@ -135,7 +150,7 @@ export default function Profile() {
       live = false;
       clearTimeout(timer);
     };
-  }, [nickname, address]);
+  }, [nickname, address, nicknameLocked]);
 
   const onPickAvatar = useCallback(async (event) => {
     const file = event.target.files?.[0];
@@ -155,7 +170,7 @@ export default function Profile() {
     event.preventDefault();
     if (!walletClient || !address || saving) return;
     const value = nickname.replace(/\s+/g, ' ').trim();
-    if (!looksReady(value) || availability?.available === false) return;
+    if (!nicknameLocked && (!looksReady(value) || availability?.available === false)) return;
     setSaving(true);
     setSaveError(null);
     setSaved(false);
@@ -173,6 +188,7 @@ export default function Profile() {
       else if (avatarDataUrl) body.avatarDataUrl = avatarDataUrl;
       const row = await saveProfile(body);
       setProfile(row);
+      setNickname(row.nickname || row.reservedNickname || value);
       setAvatarDataUrl(null);
       setClearAvatar(false);
       setAvatarPreview(row.avatarUrl || null);
@@ -183,7 +199,7 @@ export default function Profile() {
     } finally {
       setSaving(false);
     }
-  }, [walletClient, address, nickname, bio, availability, saving, clearAvatar, avatarDataUrl, t]);
+  }, [walletClient, address, nickname, bio, availability, saving, clearAvatar, avatarDataUrl, t, nicknameLocked]);
 
   if (!isConnected) {
     return (
@@ -195,7 +211,9 @@ export default function Profile() {
   }
 
   const bioLeft = BIO_MAX - [...bio].length;
-  const canSave = looksReady(nickname) && availability?.available !== false && !saving && walletClient;
+  const canSave = nicknameLocked
+    ? Boolean(walletClient) && !saving
+    : looksReady(nickname) && availability?.available !== false && !saving && walletClient;
 
   return (
     <div className="profile-page">
@@ -241,12 +259,16 @@ export default function Profile() {
               value={nickname}
               onChange={(e) => { setNickname(e.target.value.slice(0, NICK_MAX)); setSaved(false); }}
               autoComplete="nickname"
-              maxLength={NICK_MAX}
+              maxLength={nicknameLocked ? undefined : NICK_MAX}
+              readOnly={nicknameLocked}
             />
-            <small>{t('profile.nicknameHint')}</small>
-            {availability?.available === true && <small className="profile-ok">{t('profile.nicknameAvailable')}</small>}
-            {availability?.available === false && availability.reason === 'taken' && (
+            <small>{nicknameLocked ? t('profile.nicknameLocked') : t('profile.nicknameHint')}</small>
+            {!nicknameLocked && availability?.available === true && <small className="profile-ok">{t('profile.nicknameAvailable')}</small>}
+            {!nicknameLocked && availability?.available === false && availability.reason === 'taken' && (
               <small className="profile-err">{t('profile.nicknameTaken')}</small>
+            )}
+            {!nicknameLocked && availability?.available === false && availability.reason === 'reserved' && (
+              <small className="profile-err">{t('profile.nicknameReserved')}</small>
             )}
           </label>
           <label className="profile-field">

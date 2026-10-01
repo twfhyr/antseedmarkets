@@ -88,7 +88,7 @@ function WalletMenuInner({
       fetchProfile(address)
         .then((row) => {
           if (!live) return;
-          setProfile(row?.exists ? row : null);
+          setProfile(row?.exists || row?.reserved ? row : null);
         })
         .catch(() => {
           if (!live) return;

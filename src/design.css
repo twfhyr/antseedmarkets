@@ -539,6 +539,11 @@ html[data-theme="terminal"] .provider-detail__stats dd {
   padding: 10px 12px;
   font: 14px/1.5 var(--font-ui);
 }
+.profile-field input[readonly] {
+  cursor: default;
+  color: var(--ink);
+  opacity: .9;
+}
 .profile-field small { color: var(--muted); font-size: 12px; }
 .profile-ok { color: var(--soft-accent) !important; }
 .profile-err { color: var(--danger) !important; }

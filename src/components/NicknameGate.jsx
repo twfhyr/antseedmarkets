@@ -33,7 +33,7 @@ export default function NicknameGate() {
     fetchProfile(address)
       .then((row) => {
         if (!live) return;
-        setNeeded(row?.exists !== true);
+        setNeeded(row?.exists !== true && !row?.reserved);
       })
       .catch(() => {
         if (!live) return;
@@ -113,6 +113,9 @@ export default function NicknameGate() {
             {availability?.available === true && <small className="profile-ok">{t('profile.nicknameAvailable')}</small>}
             {availability?.available === false && availability.reason === 'taken' && (
               <small className="profile-err">{t('profile.nicknameTaken')}</small>
+            )}
+            {availability?.available === false && availability.reason === 'reserved' && (
+              <small className="profile-err">{t('profile.nicknameReserved')}</small>
             )}
           </label>
           {error && <p className="provider-compose__error">{error}</p>}

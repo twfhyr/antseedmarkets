@@ -25,6 +25,10 @@ assert.match(profile, /profile\.usedComment/, 'Profile lists used providers with
 assert.match(profile, /providerHref\(item\.agentId, 'comments'\)/, 'Used-provider comment links open that provider comments tab');
 assert.match(profile, /avatarDataUrl/, 'Profile can upload an avatar');
 assert.match(profile, /profile\.bio/, 'Profile can edit a bio');
+assert.match(profile, /nicknameLocked/, 'Owner nickname is locked to the catalog name');
+assert.match(profile, /readOnly=\{nicknameLocked\}/, 'Owner cannot edit the reserved nickname');
+assert.match(gate, /row\?\.exists !== true && !row\?\.reserved/, 'Owner wallets skip the nickname gate');
 assert.equal(en['profile.nicknameTaken'], 'That nickname is taken');
+assert.equal(en['profile.nicknameReserved'], 'That name is reserved for a provider');
 assert.equal(en['profile.gateTitle'], 'Choose a nickname');
 assert.equal(/seller/i.test(en['profile.usedEmpty']), false);

@@ -202,6 +202,8 @@ export default {
   "profile.nickname": "Nickname",
   "profile.nicknameAvailable": "Available",
   "profile.nicknameHint": "2 to 24 characters. Unique across the market. Not a wallet address.",
+  "profile.nicknameLocked": "This is your provider catalog name. It is reserved so nobody else can use it, and it cannot be edited.",
+  "profile.nicknameReserved": "That name is reserved for a provider",
   "profile.nicknameTaken": "That nickname is taken",
   "profile.save": "Save profile",
   "profile.saved": "Saved",
