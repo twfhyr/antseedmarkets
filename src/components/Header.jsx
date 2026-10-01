@@ -5,7 +5,7 @@ import { useDisconnect } from 'wagmi';
 import { fetchProfile } from '../api';
 import { tabHref } from '../hooks/useTabRouter';
 import { useI18n } from '../i18n/index.jsx';
-import { visiblePrimaryNav } from '../lib/nav';
+
 
 function AntLogo() {
   return (
@@ -189,15 +189,11 @@ function Header({ activeTab = 'stake', setActiveTab = () => {}, uiStyle = 'v2', 
         </div>
       </div>
 
-      {uiStyle === 'v2' && (
-        <nav className="app-header__nav" aria-label="Primary navigation">
-          {visiblePrimaryNav().map(({ tab }) => (
-            <HeaderNavLink key={tab} tab={tab} activeTab={activeTab} setActiveTab={setActiveTab}>
-              {t(`nav.${tab}`)}
-            </HeaderNavLink>
-          ))}
-        </nav>
-      )}
+      <nav className="app-header__nav" aria-label="Primary navigation">
+        <a href={import.meta.env.VITE_MY_ANTSEED_URL || '/my-antseed/'}>My Antseed</a>
+        <HeaderNavLink tab="providers" activeTab={activeTab} setActiveTab={setActiveTab}>Providers</HeaderNavLink>
+        <HeaderNavLink tab="market" activeTab={activeTab} setActiveTab={setActiveTab}>Marketplace</HeaderNavLink>
+      </nav>
 
       <div className="app-header__actions">
         <div className="design-theme-switch" role="group" aria-label="Theme">

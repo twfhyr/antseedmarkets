@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Antseed — The network, tended together</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#top" aria-label="Antseed home"><span class="brand-mark" aria-hidden="true">✳</span><span>antseed</span></a>
+    <nav class="top-links" aria-label="Network departments"><a href="/my-antseed/#/stake">My Antseed</a><a href="http://127.0.0.1:5176/lants">Marketplace</a><a href="http://127.0.0.1:5176/providers">Providers</a></nav>
+    <p class="status"><i></i> a living network</p>
+    <a class="quiet-link" href="#departments">Explore departments <span>↘</span></a>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="hero-title" id="scene">
+      <div class="hero-copy">
+        <p class="kicker">A P2P AI SERVICES NETWORK</p>
+        <h1 id="hero-title">Small hands.<br><em>Far-reaching roots.</em></h1>
+        <p class="lede">Antseed is tended by many. Find your place in the network, then let the work grow.</p>
+        <a class="scroll-cue" href="#departments"><span>01</span> Explore the ground <b>↓</b></a>
+      </div>
+      <div class="scene-wrap">
+        <svg class="scene" viewBox="0 0 720 530" role="img" aria-labelledby="scene-title scene-desc">
+          <title id="scene-title">Ants moving seeds across a growing network</title>
+          <desc id="scene-desc">A group of ants carries glowing seeds between four architectural blocks.</desc>
+          <defs>
+            <pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(30)"><path d="M0 0v8" stroke="#273127" stroke-width=".8" opacity=".18"/></pattern>
+            <pattern id="grain" width="10" height="10" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1" fill="#b7b99f" opacity=".35"/></pattern>
+            <filter id="glow"><feGaussianBlur stdDeviation="7" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            <g id="ant" fill="#1d281f" stroke="#1d281f" stroke-width="2" stroke-linecap="round"><ellipse cx="0" cy="0" rx="15" ry="9"/><ellipse cx="23" cy="-2" rx="6" ry="5"/><ellipse cx="37" cy="-4" rx="8" ry="7"/><path d="M17 0L8 15l-13 6M24 0l1 16 12 5M29-1l15 12 15-2M17-3L6-16l-12 2M24-4l5-16 14-3M31-5l15-13 11 2M40-8l9-15 10-3M44-5l15-4 9 3" fill="none"/></g>
+          </defs>
+          <circle cx="365" cy="238" r="203" fill="#e6e5d7"/>
+          <circle cx="365" cy="238" r="203" fill="url(#grain)"/>
+          <path class="ground" d="M28 403L349 223l343 176-326 112z"/>
+          <path d="M28 403L349 223l343 176-326 112z" fill="url(#hatch)"/>
+          <g class="blocks" stroke="#29362b" stroke-width="1.5">
+            <g class="block block-account" data-department="account" data-href="/my-antseed/#/stake" tabindex="0"><path d="M105 335l154-88 161 82-152 89z" fill="#f7f2e7"/><path d="M105 335v48l163 83v-48z" fill="#c9d0bd"/><path d="M268 418l152-89v48l-152 89z" fill="#91a080"/><text x="145" y="331">MY ANTSEED</text></g>
+            <g class="block block-market" data-department="market" data-href="http://127.0.0.1:5176/lants" tabindex="0"><path d="M323 280l130-75 136 69-128 76z" fill="#e9dfcc"/><path d="M323 280v42l138 70v-43z" fill="#c5ad8f"/><path d="M461 349l128-75v43l-128 75z" fill="#a98562"/><text x="465" y="309" text-anchor="middle" style="font-size:11px;font-weight:700">MARKETPLACE</text></g>
+            <g class="block block-providers" data-department="providers" data-href="http://127.0.0.1:5176/providers" tabindex="0"><path d="M236 219l108-62 111 57-106 62z" fill="#d7dfc9"/><path d="M236 219v38l113 57v-38z" fill="#aab99d"/><path d="M349 276l106-62v38l-106 62z" fill="#718967"/><text x="279" y="216">PROVIDERS</text></g>
+            <g class="block block-future" data-department="future" data-href="/next.html" tabindex="0" role="link" aria-label="Next: future ideas"><path d="M477 391l73-42 77 39-73 44z" fill="#e1e5da"/><path d="M477 391v27l77 39v-27z" fill="#bac7b6"/><path d="M554 430l73-42v27l-73 42z" fill="#8d9e8b"/><text x="521" y="388">NEXT</text></g>
+          </g>
+          <g class="seed seed-main" filter="url(#glow)" transform="translate(355 145) rotate(-25)"><path d="M-42 4C-35-41 42-58 68-16 53 34-12 48-42 4z" fill="#e7653f" stroke="#9f3825" stroke-width="2"/><path d="M-37 1C-7-12 33-17 63-16M-27 10C3-1 32-8 56-8M-14 20C10 8 28 3 48 2" fill="none" stroke="#ffc09e" stroke-width="1.5"/></g>
+          <g class="seed seed-small" transform="translate(250 350) rotate(25)"><path d="M-25-12C-10-42 23-46 40-17 27 7-9 10-25-12z" fill="#ef8b55" stroke="#9f3825"/><path d="M-21-13l55-5M-13-6l39-6" stroke="#ffd0a8"/></g>
+          <use href="#ant" class="ant ant-one" transform="translate(218 190) rotate(-20) scale(.72)"/><use href="#ant" class="ant ant-two" transform="translate(535 292) rotate(-25) scale(.78)"/><use href="#ant" class="ant ant-three" transform="translate(125 397) rotate(18) scale(.9)"/><use href="#ant" class="ant ant-four" transform="translate(563 437) rotate(180) scale(.63)"/>
+          <path class="route" d="M216 374C283 329 275 263 337 225M389 172C457 210 475 240 493 285M478 326C524 357 551 381 569 415"/>
+          <circle class="signal" cx="355" cy="145" r="7"/><circle class="signal signal-delay" cx="355" cy="145" r="17"/>
+        </svg>
+        <div class="scene-caption"><span>FIELD NOTE 001</span><span>EVERYTHING CONNECTS</span></div>
+      </div>
+    </section>
+
+    <section class="departments" id="departments" aria-labelledby="departments-title">
+      <div class="section-intro"><p class="kicker">CHOOSE YOUR GROUND</p><h2 id="departments-title">There is more than one<br><em>way into Antseed.</em></h2><p>One network. Different ways to take part. Start where your work begins.</p></div>
+      <div class="department-grid">
+        <a class="department account" data-department="account" href="/my-antseed/#/stake"><span class="number">01</span><span class="arrow">↗</span><h3>My Antseed</h3><p>Your account, payments, staking and rewards.</p><small>Open the account dashboard</small></a>
+        <a class="department market" data-department="market" href="http://127.0.0.1:5176/lants"><span class="number">02</span><span class="arrow">↗</span><h3>Marketplace</h3><p>Explore lANTS positions and the people building on them.</p><small>Enter the marketplace</small></a>
+        <a class="department providers" data-department="providers" href="http://127.0.0.1:5176/providers"><span class="number">03</span><span class="arrow">↗</span><h3>Providers</h3><p>Find the services, sellers and specialist agents in the network.</p><small>Profiles, announcements and optional conversation</small></a>
+        <a class="department future" href="/next.html"><span class="number">04</span><span class="soon">IN THE MAKING</span><h3>More to come</h3><p>New tools will grow from the work already happening here.</p><small>Take a look at what could come next ↗</small></a>
+      </div>
+    </section>
+  </main>
+  <footer><a class="brand" href="#top"><span class="brand-mark" aria-hidden="true">✳</span><span>antseed</span></a><p>Tended by many. Built for what comes next.</p><span class="year">2026 / FIELD STUDY</span></footer>
+  <script src="script.js"></script>
+</body>
+</html>
