@@ -40,6 +40,70 @@ function openEpochs(rows) {
   return (rows || []).filter((row) => !row.claimed && Number(row.amount) > 0).sort((a, b) => b.epoch - a.epoch);
 }
 
+function rewardAmount(row) {
+  return String(row?.amount ?? '0');
+}
+
+function sourceKey(source) {
+  if (!source) return '';
+  if (source.kind === 'wallet') return 'wallet';
+  if (source.kind === 'staker') return `staker-${source.positionId}`;
+  return `${source.kind}-${source.epoch}`;
+}
+
+function buildStakeSources({ isConnected, wallet, rewards, buyerRows, providerRows, stakerRows, canStakeBuyer, canStakeProvider, canStakeStaker, pools, t }) {
+  const sources = [];
+  sources.push({
+    id: 'wallet',
+    kind: 'wallet',
+    label: t('stake.deskSourceWallet'),
+    amountAnts: wallet.balance != null ? formatWeiAnts(wallet.balance, 6) : '',
+    displayAmount: wallet.balance != null ? formatWeiAnts(wallet.balance, 4) : '—',
+    available: Boolean(isConnected && wallet.canTransfer !== false),
+    hint: wallet.canTransfer === false ? t('stake.deskTransfersOff') : t('stake.deskSourceWalletHint'),
+  });
+  for (const row of buyerRows) {
+    sources.push({
+      id: `buyer-${row.epoch}`,
+      kind: 'buyer',
+      label: t('stake.deskRewardsBuyer'),
+      epoch: row.epoch,
+      amountAnts: rewardAmount(row),
+      displayAmount: num(row.amount, 4),
+      available: Boolean(canStakeBuyer),
+      hint: rewards?.buyerUsage?.claimable ? t('stake.deskSourceBuyerHint') : t('stake.deskRewardsOperator'),
+    });
+  }
+  for (const row of providerRows) {
+    sources.push({
+      id: `provider-${row.epoch}`,
+      kind: 'provider',
+      label: t('stake.deskRewardsProvider'),
+      epoch: row.epoch,
+      amountAnts: rewardAmount(row),
+      displayAmount: num(row.amount, 4),
+      available: Boolean(canStakeProvider),
+      agentId: rewards?.agentId,
+      hint: rewards?.agentId ? t('stake.deskRewardOwnPool', { id: String(rewards.agentId) }) : t('stake.needsAgent'),
+    });
+  }
+  for (const row of stakerRows) {
+    const pool = pools.find((item) => String(item.agentId) === String(row.agentId));
+    sources.push({
+      id: `staker-${row.id}`,
+      kind: 'staker',
+      label: t('stake.deskRewardsStaker'),
+      positionId: row.id,
+      agentId: row.agentId,
+      amountAnts: rewardAmount(row),
+      displayAmount: num(row.amount, 4),
+      available: Boolean(canStakeStaker),
+      hint: t('stake.deskSourceStakerHint', { id: String(row.id), pool: pool?.name || t('stake.agent', { id: row.agentId }) }),
+    });
+  }
+  return sources;
+}
+
 export default function StakingDesk() {
   const { t } = useI18n();
   const { address, isConnected } = useAccount();
@@ -51,6 +115,9 @@ export default function StakingDesk() {
   const [error, setError] = useState(false);
   const [query, setQuery] = useState('');
   const [selectedId, setSelectedId] = useState('');
+  const [sourceId, setSourceId] = useState(null);
+  const [stakePanelOpen, setStakePanelOpen] = useState(false);
+  const [stakeTargetId, setStakeTargetId] = useState(null);
   const [amount, setAmount] = useState('');
   const [epochs, setEpochs] = useState(104);
   const [bounds, setBounds] = useState({ min: 1, max: 104 });
@@ -154,110 +221,144 @@ export default function StakingDesk() {
   const canStakeProvider = !!(isConnected && rewards?.sellerUsage?.claimable && rewards?.agentId);
   const canStakeStaker = !!(isConnected && rewards?.contracts?.sellerPoolsRewards);
   const hasRewardRows = buyerRows.length > 0 || providerRows.length > 0 || stakerRows.length > 0;
+  const stakeSources = useMemo(() => buildStakeSources({
+    isConnected,
+    wallet,
+    rewards,
+    buyerRows,
+    providerRows,
+    stakerRows,
+    canStakeBuyer,
+    canStakeProvider,
+    canStakeStaker,
+    pools,
+    t,
+  }), [isConnected, wallet, rewards, buyerRows, providerRows, stakerRows, canStakeBuyer, canStakeProvider, canStakeStaker, pools, t]);
+  const stakeTarget = stakeTargetId != null ? pools.find((p) => String(p.agentId) === String(stakeTargetId)) || null : null;
+  const visibleStakeSources = useMemo(() => (
+    stakeTargetId == null
+      ? stakeSources
+      : stakeSources.filter((source) => source.agentId == null || String(source.agentId) === String(stakeTargetId))
+  ), [stakeSources, stakeTargetId]);
+  const selectedSource = visibleStakeSources.find((source) => source.id === sourceId)
+    || visibleStakeSources.find((source) => source.available && source.kind !== 'wallet')
+    || visibleStakeSources.find((source) => source.available)
+    || visibleStakeSources[0]
+    || null;
+  const sourceNeedsEditableAmount = selectedSource?.kind === 'wallet';
+  const canChooseProvider = stakeTargetId == null && !selectedSource?.agentId;
+  const effectiveSelected = selectedSource?.agentId ? pools.find((p) => String(p.agentId) === String(selectedSource.agentId)) || null : stakeTarget || selected;
+  const selectedPoolId = selectedSource?.agentId ? String(selectedSource.agentId) : selectedId;
 
-  const onStake = async (event) => {
-    event.preventDefault();
-    if (!walletClient || !address || !overview?.contracts?.sellerPools || !overview?.contracts?.antsToken) return;
-    if (!selected) {
-      setStatus({ phase: 'error', message: t('stake.deskPickPool') });
-      return;
+  useEffect(() => {
+    if (selectedSource?.agentId && String(selectedId) !== String(selectedSource.agentId)) {
+      setSelectedId(String(selectedSource.agentId));
     }
-    if (!amountWei || amountWei <= 0n) {
-      setStatus({ phase: 'error', message: t('stake.deskAmount') });
-      return;
-    }
-    if (wallet.canTransfer === false) {
-      setStatus({ phase: 'error', message: t('stake.deskTransfersOff') });
-      return;
-    }
-    if (wallet.balance != null && amountWei > wallet.balance) {
-      setStatus({ phase: 'error', message: t('stake.deskExceeds') });
-      return;
-    }
-    setStatus({ phase: 'staking', message: t('stake.deskConfirm') });
-    try {
-      const result = await stakeWalletAnts({
-        walletClient,
-        account: address,
-        antsToken: overview.contracts.antsToken,
-        poolsAddress: overview.contracts.sellerPools,
-        agentId: selected.agentId,
-        amountWei,
-        epochs,
-      });
-      setStatus({ phase: 'done', message: t('stake.deskDone'), hash: result.hash });
-      setAmount('');
+  }, [selectedSource?.agentId, selectedId]);
+
+  const onChooseSource = (source) => {
+    setSourceId(source.id);
+    setStatus(null);
+    if (source.agentId) setSelectedId(String(source.agentId));
+    else if (stakeTargetId != null) setSelectedId(String(stakeTargetId));
+    setAmount(source.kind === 'wallet' ? '' : source.amountAnts || '');
+  };
+
+  const openStakePanel = (pool = null, preferRewards = false) => {
+    const targetId = pool ? String(pool.agentId) : null;
+    setStakePanelOpen(true);
+    setStakeTargetId(targetId);
+    setSourceId(preferRewards ? null : null);
+    setAmount('');
+    setStatus(null);
+    if (targetId) setSelectedId(targetId);
+  };
+
+  const closeStakePanel = () => {
+    if (busy) return;
+    setStakePanelOpen(false);
+    setStakeTargetId(null);
+    setStatus(null);
+  };
+
+  const refreshAfterStake = () => {
+    load(true);
+    if (address) loadRewards(address, true);
+    if (publicClient && overview?.contracts?.antsToken && address) {
       readWalletAnts({ publicClient, antsToken: overview.contracts.antsToken, account: address }).then(setWallet);
-      load(true);
-    } catch (err) {
-      setStatus({ phase: 'error', message: err.shortMessage || err.message || t('stake.deskFailed') });
     }
   };
 
-  const onStakeReward = async (side, epoch) => {
-    if (!walletClient || !address || !rewards?.contracts?.usageRewards) return;
-    const key = `${side}-${epoch}`;
-    if (side === 'buyer') {
-      if (!selected) {
-        setStatus({ phase: 'error', key, message: t('stake.deskPickPool') });
+  const onStakeSelectedSource = async (event) => {
+    event.preventDefault();
+    if (!selectedSource || !walletClient || !address || !overview?.contracts?.sellerPools || !overview?.contracts?.antsToken) return;
+    const key = sourceKey(selectedSource);
+    if (!selectedSource.available) {
+      setStatus({ phase: 'error', key, message: selectedSource.hint || t('stake.deskFailed') });
+      return;
+    }
+    if (!effectiveSelected) {
+      setStatus({ phase: 'error', key, message: t('stake.deskPickPool') });
+      return;
+    }
+    if (sourceNeedsEditableAmount && (!amountWei || amountWei <= 0n)) {
+      setStatus({ phase: 'error', key, message: t('stake.deskAmount') });
+      return;
+    }
+    if (selectedSource.kind === 'wallet') {
+      if (wallet.canTransfer === false) {
+        setStatus({ phase: 'error', key, message: t('stake.deskTransfersOff') });
         return;
       }
-      setStatus({ phase: 'staking', key, message: t('stake.stakingBuyer', { epoch, agent: selected.agentId, lock: epochs }) });
-      try {
-        const result = await stakeUnclaimedBuyerReward({
+      if (wallet.balance != null && amountWei > wallet.balance) {
+        setStatus({ phase: 'error', key, message: t('stake.deskExceeds') });
+        return;
+      }
+    }
+    setStatus({ phase: 'staking', key, message: t('stake.deskConfirm') });
+    try {
+      let result;
+      if (selectedSource.kind === 'wallet') {
+        result = await stakeWalletAnts({
+          walletClient,
+          account: address,
+          antsToken: overview.contracts.antsToken,
+          poolsAddress: overview.contracts.sellerPools,
+          agentId: effectiveSelected.agentId,
+          amountWei,
+          epochs,
+        });
+      } else if (selectedSource.kind === 'buyer') {
+        result = await stakeUnclaimedBuyerReward({
           walletClient,
           account: address,
           usageRewards: rewards.contracts.usageRewards,
           buyer: address,
-          epoch,
-          agentId: selected.agentId,
+          epoch: selectedSource.epoch,
+          agentId: effectiveSelected.agentId,
           epochs,
         });
-        setStatus({ phase: 'done', key, message: t('stake.stakedBuyer', { epoch, agent: selected.agentId, lock: epochs }), hash: result.hash });
-        loadRewards(address, true);
-        load(true);
-      } catch (err) {
-        setStatus({ phase: 'error', key, message: err.shortMessage || err.message || t('stake.deskFailed') });
+      } else if (selectedSource.kind === 'provider') {
+        result = await stakeUnclaimedAgentReward({
+          walletClient,
+          account: address,
+          usageRewards: rewards.contracts.usageRewards,
+          agentId: selectedSource.agentId,
+          epoch: selectedSource.epoch,
+          epochs,
+        });
+      } else {
+        result = await restakeUnclaimedStakerRewards({
+          walletClient,
+          account: address,
+          sellerPoolsRewards: rewards.contracts.sellerPoolsRewards,
+          positionIds: [selectedSource.positionId],
+          epochs,
+        });
       }
-      return;
-    }
-    if (!rewards.agentId) {
-      setStatus({ phase: 'error', key, message: t('stake.needsAgent') });
-      return;
-    }
-    setStatus({ phase: 'staking', key, message: t('stake.stakingSeller', { epoch, lock: epochs }) });
-    try {
-      const result = await stakeUnclaimedAgentReward({
-        walletClient,
-        account: address,
-        usageRewards: rewards.contracts.usageRewards,
-        agentId: rewards.agentId,
-        epoch,
-        epochs,
-      });
-      setStatus({ phase: 'done', key, message: t('stake.stakedSeller', { epoch, lock: epochs }), hash: result.hash });
-      loadRewards(address, true);
-      load(true);
-    } catch (err) {
-      setStatus({ phase: 'error', key, message: err.shortMessage || err.message || t('stake.deskFailed') });
-    }
-  };
-
-  const onStakeStaker = async (positionId) => {
-    if (!walletClient || !address || !rewards?.contracts?.sellerPoolsRewards) return;
-    const key = `staker-${positionId}`;
-    setStatus({ phase: 'staking', key, message: t('stake.stakingStaker', { id: String(positionId), lock: epochs }) });
-    try {
-      const result = await restakeUnclaimedStakerRewards({
-        walletClient,
-        account: address,
-        sellerPoolsRewards: rewards.contracts.sellerPoolsRewards,
-        positionIds: [positionId],
-        epochs,
-      });
-      setStatus({ phase: 'done', key, message: t('stake.stakedStaker', { id: String(positionId), lock: epochs }), hash: result.hash });
-      loadRewards(address, true);
-      load(true);
+      setStatus({ phase: 'done', key, message: t('stake.deskDone'), hash: result.hash });
+      setAmount('');
+      refreshAfterStake();
     } catch (err) {
       setStatus({ phase: 'error', key, message: err.shortMessage || err.message || t('stake.deskFailed') });
     }
@@ -295,173 +396,169 @@ export default function StakingDesk() {
 
       {overview && (
         <>
-          <form className="staking-form" onSubmit={onStake}>
-            <h3>{t('stake.deskFormTitle')}</h3>
-            {!isConnected && <p className="staking-form__hint">{t('stake.deskNeedWallet')}</p>}
-            {isConnected && wallet.canTransfer === false && (
-              <p className="staking-form__hint">{t('stake.deskTransfersOff')}</p>
-            )}
-            <div className="staking-form__fields">
-              <label>
-                <span>{t('stake.deskPool')}</span>
-                <select
-                  value={selectedId}
-                  onChange={(e) => setSelectedId(e.target.value)}
-                  disabled={busy}
-                >
-                  <option value="">{t('stake.deskPoolPlaceholder')}</option>
-                  {pools.map((pool) => (
-                    <option key={pool.agentId} value={String(pool.agentId)}>
-                      {pool.name || t('stake.agent', { id: pool.agentId })} #{pool.agentId}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                <span>{t('stake.deskAmountLabel')}</span>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="0.0"
-                  disabled={busy || !isConnected}
-                />
-                {wallet.balance != null && (
+          {stakePanelOpen && (
+            <form className="staking-form" onSubmit={onStakeSelectedSource}>
+              <div className="staking-form__header">
+                <div>
+                  <h3>{stakeTarget ? t('stake.deskStakeInto', { pool: stakeTarget.name || t('stake.agent', { id: stakeTarget.agentId }) }) : t('stake.deskRewards')}</h3>
+                  <p className="staking-form__hint">{t('stake.deskFormHint')}</p>
+                </div>
+                <button type="button" className="staking-form__close" onClick={closeStakePanel} disabled={busy} aria-label={t('stake.deskClose')}>×</button>
+              </div>
+              {!isConnected && <p className="staking-form__hint">{t('stake.deskNeedWallet')}</p>}
+              {isConnected && wallet.canTransfer === false && (
+                <p className="staking-form__hint">{t('stake.deskTransfersOff')}</p>
+              )}
+              {isConnected && rewardsLoading && !rewards && (
+                <div className="staking-desk__status">
+                  <Loader2 size={16} className="spin" />
+                  <span>{t('stake.deskRewardsLoading')}</span>
+                </div>
+              )}
+              {isConnected && rewards && !hasRewardRows && (
+                <p className="staking-form__hint">{t('stake.deskRewardsEmpty')}</p>
+              )}
+
+              <div className="staking-flow">
+                <label>
+                  <span>{t('stake.deskSource')}</span>
+                  <select
+                    value={selectedSource?.id || ''}
+                    onChange={(e) => {
+                      const next = visibleStakeSources.find((source) => source.id === e.target.value);
+                      if (next) onChooseSource(next);
+                    }}
+                    disabled={busy || visibleStakeSources.length === 0}
+                  >
+                    {visibleStakeSources.map((source) => (
+                      <option key={source.id} value={source.id}>
+                        {source.label} {source.displayAmount} ANTS
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                {canChooseProvider ? (
+                  <label>
+                    <span>{t('stake.deskPool')}</span>
+                    <select
+                      value={selectedPoolId}
+                      onChange={(e) => setSelectedId(e.target.value)}
+                      disabled={busy}
+                    >
+                      <option value="">{t('stake.deskPoolPlaceholder')}</option>
+                      {pools.map((pool) => (
+                        <option key={pool.agentId} value={String(pool.agentId)}>
+                          {pool.name || t('stake.agent', { id: pool.agentId })} #{pool.agentId}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : (
+                  <div className="staking-flow__locked">
+                    <span>{t('stake.deskPool')}</span>
+                    <strong>{effectiveSelected?.name || t('stake.agent', { id: selectedSource?.agentId || stakeTargetId })}</strong>
+                    <small>{t('stake.deskLockedPool')}</small>
+                  </div>
+                )}
+
+                <label>
+                  <span>{t('stake.deskAmountLabel')}</span>
+                  {sourceNeedsEditableAmount ? (
+                    <>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        placeholder="0.0"
+                        disabled={busy || !isConnected}
+                      />
+                      {wallet.balance != null && (
+                        <button
+                          type="button"
+                          className="staking-form__max"
+                          onClick={() => setAmount(formatWeiAnts(wallet.balance, 6))}
+                          disabled={busy}
+                        >
+                          {t('stake.deskMaxBalance', { amount: formatWeiAnts(wallet.balance, 4) })}
+                        </button>
+                      )}
+                    </>
+                  ) : (
+                    <div className="staking-flow__amount">
+                      <strong>{selectedSource?.displayAmount || '—'} ANTS</strong>
+                      <small>{t('stake.deskRewardAmountFixed')}</small>
+                    </div>
+                  )}
+                </label>
+
+                <label>
+                  <span>{t('stake.lockInput')}</span>
+                  <input
+                    type="range"
+                    min={bounds.min}
+                    max={bounds.max}
+                    value={epochs}
+                    onChange={(e) => setEpochs(Number(e.target.value))}
+                    disabled={busy}
+                  />
+                  <em className="staking-form__readout">{t('stake.deskLockReadout', { days: String(lockDays), epochs: String(epochs) })}</em>
+                </label>
+              </div>
+              <div className="staking-form__presets">
+                {LOCK_PRESETS.map((preset) => (
                   <button
+                    key={preset.label}
                     type="button"
-                    className="staking-form__max"
-                    onClick={() => setAmount(formatWeiAnts(wallet.balance, 6))}
+                    onClick={() => setEpochs(preset.days === 'max' ? bounds.max : epochsForDays(preset.days))}
                     disabled={busy}
                   >
-                    {t('stake.deskMaxBalance', { amount: formatWeiAnts(wallet.balance, 4) })}
+                    {preset.label}
                   </button>
-                )}
-              </label>
-              <label>
-                <span>{t('stake.lockInput')}</span>
-                <input
-                  type="range"
-                  min={bounds.min}
-                  max={bounds.max}
-                  value={epochs}
-                  onChange={(e) => setEpochs(Number(e.target.value))}
-                  disabled={busy}
-                />
-                <em className="staking-form__readout">{t('stake.deskLockReadout', { days: String(lockDays), epochs: String(epochs) })}</em>
-              </label>
-            </div>
-            <div className="staking-form__presets">
-              {LOCK_PRESETS.map((preset) => (
-                <button
-                  key={preset.label}
-                  type="button"
-                  onClick={() => setEpochs(preset.days === 'max' ? bounds.max : epochsForDays(preset.days))}
-                  disabled={busy}
-                >
-                  {preset.label}
-                </button>
-              ))}
-            </div>
-            <button
-              type="submit"
-              className="v2-position-button v2-position-button--buy"
-              disabled={busy || !isConnected || wallet.canTransfer === false}
-            >
-              {busy && !status?.key ? <Loader2 size={14} className="spin" /> : null}
-              {busy && !status?.key ? t('stake.deskConfirm') : t('stake.deskSubmit')}
-            </button>
-            {status?.message && !status?.key && (
-              <p className={`staking-form__status${status.phase === 'error' ? ' is-error' : ''}`}>
-                {status.message}
-                {status.hash ? (
-                  <>
-                    {' '}
-                    <a href={`https://basescan.org/tx/${status.hash}`} target="_blank" rel="noopener noreferrer">tx</a>
-                  </>
-                ) : null}
-              </p>
-            )}
-          </form>
-
-          <section className="staking-rewards" aria-label={t('stake.deskRewards')}>
-            <div className="staking-pools__bar">
-              <h3>{t('stake.deskRewards')}</h3>
-            </div>
-            <p className="staking-form__hint">{t('stake.deskRewardsBlurb')}</p>
-            {!isConnected && <p className="staking-form__hint">{t('stake.deskRewardsNeedWallet')}</p>}
-            {isConnected && rewardsLoading && !rewards && (
-              <div className="staking-desk__status">
-                <Loader2 size={16} className="spin" />
-                <span>{t('stake.deskRewardsLoading')}</span>
+                ))}
               </div>
-            )}
-            {isConnected && rewards && !hasRewardRows && (
-              <p className="staking-form__hint">{t('stake.deskRewardsEmpty')}</p>
-            )}
-            {isConnected && rewards && hasRewardRows && (
-              <div className="staking-rewards__tables">
-                {stakerRows.length > 0 && (
-                  <StakerRewardTable
-                    title={t('stake.deskRewardsStaker')}
-                    rows={stakerRows}
-                    pools={pools}
-                    canStake={canStakeStaker}
-                    note={t('stake.deskRewardsStakerNote')}
-                    status={status}
-                    onStake={onStakeStaker}
-                    t={t}
-                  />
-                )}
-                {buyerRows.length > 0 && (
-                  <RewardEpochTable
-                    title={t('stake.deskRewardsBuyer')}
-                    rows={buyerRows}
-                    side="buyer"
-                    canStake={canStakeBuyer}
-                    note={!rewards.buyerUsage?.claimable ? t('stake.deskRewardsOperator') : null}
-                    status={status}
-                    onStake={(epoch) => onStakeReward('buyer', epoch)}
-                    t={t}
-                  />
-                )}
-                {providerRows.length > 0 && (
-                  <RewardEpochTable
-                    title={t('stake.deskRewardsProvider')}
-                    rows={providerRows}
-                    side="provider"
-                    canStake={canStakeProvider}
-                    note={rewards.agentId ? t('stake.deskRewardOwnPool', { id: String(rewards.agentId) }) : t('stake.needsAgent')}
-                    status={status}
-                    onStake={(epoch) => onStakeReward('provider', epoch)}
-                    t={t}
-                  />
-                )}
-              </div>
-            )}
-            {status?.key && status?.message && (
-              <p className={`staking-form__status${status.phase === 'error' ? ' is-error' : ''}`}>
-                {status.message}
-                {status.hash ? (
-                  <>
-                    {' '}
-                    <a href={`https://basescan.org/tx/${status.hash}`} target="_blank" rel="noopener noreferrer">tx</a>
-                  </>
-                ) : null}
-              </p>
-            )}
-          </section>
+              <button
+                type="submit"
+                className="v2-position-button v2-position-button--buy"
+                disabled={busy || !isConnected || !selectedSource || !selectedSource.available || (selectedSource.kind === 'wallet' && wallet.canTransfer === false)}
+              >
+                {busy ? <Loader2 size={14} className="spin" /> : null}
+                {busy ? t('stake.deskConfirm') : t(selectedSource?.kind === 'wallet' ? 'stake.deskSubmit' : 'stake.deskStakeReward')}
+              </button>
+              {status?.message && (
+                <p className={`staking-form__status${status.phase === 'error' ? ' is-error' : ''}`}>
+                  {status.message}
+                  {status.hash ? (
+                    <>
+                      {' '}
+                      <a href={`https://basescan.org/tx/${status.hash}`} target="_blank" rel="noopener noreferrer">tx</a>
+                    </>
+                  ) : null}
+                </p>
+              )}
+            </form>
+          )}
 
           <section className="staking-pools">
             <div className="staking-pools__bar">
               <h3>{t('stake.deskPoolsTitle')}</h3>
-              <input
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder={t('stake.deskSearch')}
-                aria-label={t('stake.deskSearch')}
-              />
+              <div className="staking-pools__actions">
+                <button
+                  type="button"
+                  className="lants-nft__listbtn design-action--primary"
+                  onClick={() => openStakePanel(null, true)}
+                >
+                  {t('stake.deskStakeRewards')}
+                </button>
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder={t('stake.deskSearch')}
+                  aria-label={t('stake.deskSearch')}
+                />
+              </div>
             </div>
             <div className="staking-pools__table-wrap">
               <table className="staking-pools__table">
@@ -497,9 +594,9 @@ export default function StakingDesk() {
                         <button
                           type="button"
                           className="lants-nft__listbtn design-action--primary"
-                          onClick={() => setSelectedId(String(pool.agentId))}
+                          onClick={() => openStakePanel(pool)}
                         >
-                          {t('stake.deskSelect')}
+                          {t('stake.deskSubmit')}
                         </button>
                       </td>
                     </tr>
@@ -510,96 +607,6 @@ export default function StakingDesk() {
           </section>
         </>
       )}
-    </div>
-  );
-}
-
-function StakerRewardTable({ title, rows, pools, canStake, note, status, onStake, t }) {
-  const busy = status?.phase === 'staking' || status?.phase === 'approving';
-  return (
-    <div className="staking-rewards__block">
-      <h4>{title}</h4>
-      {note && <p className="staking-form__hint">{note}</p>}
-      <table className="staking-pools__table">
-        <thead>
-          <tr>
-            <th>{t('stake.deskPool')}</th>
-            <th>ANTS</th>
-            <th />
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => {
-            const thisBusy = busy && status?.key === `staker-${row.id}`;
-            const pool = pools.find((p) => String(p.agentId) === String(row.agentId));
-            return (
-              <tr key={row.id}>
-                <td>
-                  <strong>{pool?.name || t('stake.agent', { id: row.agentId })}</strong>
-                  <div className="staking-pools__meta">{t('stake.deskRewardsPosition', { id: String(row.id) })}</div>
-                </td>
-                <td>{num(row.amount, 4)}</td>
-                <td>
-                  {canStake ? (
-                    <button
-                      type="button"
-                      className="lants-nft__listbtn design-action--primary"
-                      disabled={busy}
-                      onClick={() => onStake(row.id)}
-                    >
-                      {thisBusy ? <Loader2 size={12} className="spin" /> : null}
-                      {t('stake.deskStakeReward')}
-                    </button>
-                  ) : null}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function RewardEpochTable({ title, rows, side, canStake, note, status, onStake, t }) {
-  const busy = status?.phase === 'staking' || status?.phase === 'approving';
-  return (
-    <div className="staking-rewards__block">
-      <h4>{title}</h4>
-      {note && <p className="staking-form__hint">{note}</p>}
-      <table className="staking-pools__table">
-        <thead>
-          <tr>
-            <th>{t('stake.deskRewardsEpochCol')}</th>
-            <th>ANTS</th>
-            <th />
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => {
-            const thisBusy = busy && status?.key === `${side}-${row.epoch}`;
-            return (
-              <tr key={row.epoch}>
-                <td>{t('stake.deskRewardsEpoch', { epoch: String(row.epoch) })}</td>
-                <td>{num(row.amount, 4)}</td>
-                <td>
-                  {canStake ? (
-                    <button
-                      type="button"
-                      className="lants-nft__listbtn design-action--primary"
-                      disabled={busy}
-                      onClick={() => onStake(row.epoch)}
-                    >
-                      {thisBusy ? <Loader2 size={12} className="spin" /> : null}
-                      {t('stake.deskStakeReward')}
-                    </button>
-                  ) : null}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
     </div>
   );
 }

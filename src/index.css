@@ -3017,6 +3017,7 @@ html[data-ui-style="v2"] body {
   margin-bottom: 32px;
 }
 
+.staking-flow,
 .staking-form__fields {
   display: grid;
   grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1.1fr);
@@ -3024,11 +3025,57 @@ html[data-ui-style="v2"] body {
   align-items: start;
 }
 
+.staking-flow__amount small,
+.staking-flow__locked small {
+  color: #687064;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.staking-flow__amount,
+.staking-flow__locked {
+  min-height: 40px;
+  border: 1px solid #dcded1;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  justify-content: center;
+}
+
+.staking-flow__amount strong,
+.staking-flow__locked strong {
+  color: #293127;
+  font-weight: 500;
+}
+
 .staking-form h3 {
   margin: 0;
   font-size: 22px;
   font-weight: 500;
   color: #293127;
+}
+
+.staking-form__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.staking-form__header h3 {
+  margin-bottom: 6px;
+}
+
+.staking-form__close {
+  width: 34px;
+  height: 34px;
+  border: 1px solid #dcded1;
+  background: transparent;
+  color: #293127;
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
 }
 
 .staking-form__hint {
@@ -3195,6 +3242,7 @@ html[data-ui-style="v2"] body {
   .dashboard[data-ui-style="v2"] .v2-how { grid-template-columns: 1fr; gap: 35px; }
   .staking-ticker { grid-template-columns: repeat(3, 1fr); row-gap: 16px; }
   .staking-ticker > div:nth-child(3n) { border-right: 0; }
+  .staking-flow,
   .staking-form__fields { grid-template-columns: 1fr; }
   .staking-rewards__tables { grid-template-columns: 1fr; }
   .staking-form { order: 0; position: static; }
