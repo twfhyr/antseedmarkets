@@ -8,6 +8,7 @@ import Providers from './components/Providers';
 import Discovery from './components/Discovery';
 import Leaderboard from './components/Leaderboard';
 import Profile from './components/Profile';
+import Chat from './components/Chat';
 import Header from './components/Header';
 import { useI18n } from './i18n/index.jsx';
 import { useTabRouter, tabHref } from './hooks/useTabRouter';
@@ -73,6 +74,7 @@ function App() {
         {activeTab === 'stake' && <MyAntseed />}
         {activeTab === 'market' && <StakeANTS uiStyle={uiStyle} />}
         {activeTab === 'providers' && <Providers />}
+        {activeTab === 'chat' && <Chat setActiveTab={setActiveTab} />}
         {activeTab === 'discovery' && <Discovery />}
         {activeTab === 'leaderboard' && <Leaderboard />}
         {activeTab === 'portfolio' && <Portfolio />}

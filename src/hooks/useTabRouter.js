@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 // root path; existing app surfaces keep their deep links so bookmarks and
 // production routes continue to work while account/staking moves under
 // /my-antseed/.
-const TAB_PATHS = { home: '', stake: 'my-antseed', next: 'next', market: 'lants', portfolio: 'portfolio', rewards: 'rewards', providers: 'providers', discovery: 'discovery', leaderboard: 'leaderboard', profile: 'profile' };
+const TAB_PATHS = { home: '', stake: 'my-antseed', next: 'next', market: 'lants', portfolio: 'portfolio', rewards: 'rewards', providers: 'providers', chat: 'chat', discovery: 'discovery', leaderboard: 'leaderboard', profile: 'profile' };
 const PATH_TABS = Object.fromEntries(
   Object.entries(TAB_PATHS).filter(([, p]) => p).map(([tab, p]) => [p, tab])
 );

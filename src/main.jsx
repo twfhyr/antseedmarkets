@@ -10,6 +10,8 @@ import { I18nProvider } from './i18n/index.jsx'
 import './index.css'
 import './design.css'
 import './actions.css'
+import './site-home.css';
+import './chat.css'
 import './my-antseed.css'
 
 const queryClient = new QueryClient()

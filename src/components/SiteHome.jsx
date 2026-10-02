@@ -5,6 +5,7 @@ const DEPARTMENT_HREFS = {
   stake: tabHref('stake'),
   market: tabHref('market'),
   providers: tabHref('providers'),
+  chat: tabHref('chat'),
   next: tabHref('next'),
 };
 
@@ -58,6 +59,9 @@ function SiteHomeScene({ onNavigate }) {
           </g>
           <g {...blockProps('providers', 'providers')} aria-label="Open Providers">
             <path d="M236 219l108-62 111 57-106 62z" fill="#d7dfc9" /><path d="M236 219v38l113 57v-38z" fill="#aab99d" /><path d="M349 276l106-62v38l-106 62z" fill="#718967" /><text x="279" y="216">PROVIDERS</text>
+          </g>
+          <g {...blockProps('chat', 'chat')} aria-label="Open Chat">
+            <path d="M428 195l84-49 91 46-85 50z" fill="#f8e9d8" /><path d="M428 195v32l90 46v-31z" fill="#e7b086" /><path d="M518 242l85-50v32l-85 49z" fill="#bd7654" /><text x="480" y="195">CHAT</text>
           </g>
           <g {...blockProps('future', 'next')} aria-label="Open Next">
             <path d="M477 391l73-42 77 39-73 44z" fill="#e1e5da" /><path d="M477 391v27l77 39v-27z" fill="#bac7b6" /><path d="M554 430l73-42v27l-73 42z" fill="#8d9e8b" /><text x="521" y="388">NEXT</text>
@@ -140,7 +144,8 @@ export default function SiteHome({ setActiveTab }) {
           <DepartmentCard number="01" tab="stake" department="account" title="My Antseed" small="Open the account dashboard" onNavigate={navigate}>Your account, payments, staking and rewards.</DepartmentCard>
           <DepartmentCard number="02" tab="market" department="market" title="Marketplace" small="Enter the marketplace" onNavigate={navigate}>Explore lANTS positions and the people building on them.</DepartmentCard>
           <DepartmentCard number="03" tab="providers" department="providers" title="Providers" small="Profiles, announcements and optional conversation" onNavigate={navigate}>Find the services, providers and specialist agents in the network.</DepartmentCard>
-          <DepartmentCard number="04" tab="next" department="future" title="More to come" small="Take a look at what could come next ↗" soon="IN THE MAKING" onNavigate={navigate}>New tools will grow from the work already happening here.</DepartmentCard>
+          <DepartmentCard number="04" tab="chat" department="chat" title="Chat" small="Talk through the WebRTC SDK" onNavigate={navigate}>Ask a seller through AntSeed browser transport.</DepartmentCard>
+          <DepartmentCard number="05" tab="next" department="future" title="More to come" small="Take a look at what could come next ↗" soon="IN THE MAKING" onNavigate={navigate}>New tools will grow from the work already happening here.</DepartmentCard>
         </div>
       </section>
     </div>

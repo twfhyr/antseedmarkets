@@ -3,6 +3,7 @@
 export const PRIMARY_NAV = [
   { tab: 'stake', hidden: false },
   { tab: 'providers', hidden: false },
+  { tab: 'chat', hidden: false },
   { tab: 'market', hidden: false },
   { tab: 'discovery', hidden: true },
   { tab: 'leaderboard', hidden: true },

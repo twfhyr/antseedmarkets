@@ -9,6 +9,7 @@ export default {
   "nav.leaderboard": "Leaderboard",
   "nav.portfolio": "Portfolio",
   "nav.providers": "Providers",
+  "nav.chat": "Chat",
   "nav.rewards": "Rewards",
   "nav.market": "Marketplace",
   "nav.stake": "My Antseed",
