@@ -260,3 +260,74 @@ export function useProviderDetailRouter() {
 
   return [agentId, providerTab, openProvider, setProviderTab, closeProvider];
 }
+
+// ─── My Antseed inner pages (/my-antseed, /my-antseed/rewards|provider|network|addresses)
+export const MY_ANTSEED_TABS = [
+  { id: 'stake', label: 'Stake' },
+  { id: 'rewards', label: 'Rewards' },
+  { id: 'provider', label: 'Provider' },
+];
+export const MY_ANTSEED_PAGES = ['stake', 'rewards', 'provider', 'network', 'addresses'];
+const MY_ANTSEED_REDIRECTS = {
+  seller: 'provider',
+  overview: 'stake',
+  positions: 'stake',
+  pools: 'stake',
+  usage: 'network',
+  emissions: 'network',
+  verification: 'network',
+};
+
+function myAntseedPageFromLocation() {
+  const path = window.location.pathname;
+  const rel = path.startsWith(BASE) ? path.slice(BASE.length) : path.replace(/^\//, '');
+  const [first, second] = rel.split('/');
+  if (first !== 'my-antseed') return 'stake';
+  const redirect = MY_ANTSEED_REDIRECTS[second];
+  if (redirect) return redirect;
+  return MY_ANTSEED_PAGES.includes(second) ? second : 'stake';
+}
+
+export function myAntseedHref(page) {
+  if (!page || page === 'stake') return `${BASE}my-antseed`;
+  return `${BASE}my-antseed/${page}`;
+}
+
+export function useMyAntseedPageRouter() {
+  const [page, setPageState] = useState(myAntseedPageFromLocation);
+
+  useEffect(() => {
+    const sync = () => setPageState(myAntseedPageFromLocation());
+    window.addEventListener('popstate', sync);
+    window.addEventListener('antseed:navigate', sync);
+    return () => {
+      window.removeEventListener('popstate', sync);
+      window.removeEventListener('antseed:navigate', sync);
+    };
+  }, []);
+
+  useEffect(() => {
+    const loc = myAntseedPageFromLocation();
+    const second = (() => {
+      const path = window.location.pathname;
+      const rel = path.startsWith(BASE) ? path.slice(BASE.length) : path.replace(/^\//, '');
+      return rel.split('/')[1];
+    })();
+    if (MY_ANTSEED_REDIRECTS[second]) {
+      const url = myAntseedHref(loc);
+      window.history.replaceState(null, '', url);
+    }
+  }, []);
+
+  const setPage = useCallback((next) => {
+    if (!MY_ANTSEED_PAGES.includes(next)) return;
+    setPageState(next);
+    const url = myAntseedHref(next);
+    if (window.location.pathname !== url) {
+      window.history.pushState(null, '', url);
+      window.dispatchEvent(new Event('antseed:navigate'));
+    }
+  }, []);
+
+  return [page, setPage];
+}

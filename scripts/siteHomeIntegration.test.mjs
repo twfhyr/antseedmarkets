@@ -19,7 +19,7 @@ assert.match(router, /stake: 'my-antseed'/, 'staking desk moves under the accoun
 assert.match(router, /next: 'next'/, 'Next page remains reachable as its own routed page');
 assert.match(app, /activeTab === 'home' && <SiteHome/, 'App renders approved homepage at root');
 assert.match(app, /activeTab === 'next' && <SiteNext/, 'App renders approved Next page');
-assert.match(app, /activeTab === 'stake' && <StakingDesk/, 'financial staking handlers stay mounted under account route');
+assert.match(app, /activeTab === 'stake' && <MyAntseed/, 'My Antseed dashboard stays mounted under the account route');
 assert.match(header, /visiblePrimaryNav\(\)/, 'Header keeps the shared approved primary nav');
 assert.match(nav, /tab: 'providers', hidden: false/, 'Header keeps approved Providers nav');
 assert.match(nav, /tab: 'market', hidden: false/, 'Header keeps approved Marketplace nav');
@@ -32,7 +32,8 @@ assert.match(siteHome, /tabHref\('stake'\)/, 'My Antseed links route to hosted a
 assert.match(siteHome, /tabHref\('market'\)/, 'Marketplace links preserve /lants deep link');
 assert.match(siteHome, /tabHref\('providers'\)/, 'Providers links preserve /providers deep link');
 assert.match(siteHome, /tabHref\('next'\)/, 'Next is only exposed from homepage content');
-assert.match(siteHome, /sessionStorage\.setItem\('ants.dashboard.token'/, 'Prototype token carryover is preserved safely for local ANTS service');
+assert.doesNotMatch(siteHome, /ants\.dashboard\.token/, 'Local ants session token is not captured on the public site');
+assert.doesNotMatch(siteHome, /sessionStorage\.setItem/, 'Homepage does not store a dashboard session');
 assert.doesNotMatch(siteHome, /127\.0\.0\.1:5176/, 'Prototype localhost links are removed from production app');
 assert.doesNotMatch(siteHome, /http:\/\//, 'Homepage internal routes are not hard-coded to local preview hosts');
 assert.match(css, /\.site-home\s*\{/, 'Approved homepage styles are integrated');

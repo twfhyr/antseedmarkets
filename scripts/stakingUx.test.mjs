@@ -28,7 +28,7 @@ for (const tab of ['discovery', 'leaderboard', 'portfolio', 'rewards']) {
 assert.match(header, /visiblePrimaryNav\(\)/);
 assert.match(app, /visiblePrimaryNav\(\)/);
 assert.doesNotMatch(app, /<NicknameGate \/>/, 'Nickname gate is unmounted');
-assert.match(app, /activeTab === 'stake' && <StakingDesk/, 'Stake menu renders the staking desk');
+assert.match(app, /activeTab === 'stake' && <MyAntseed/, 'Stake route renders My Antseed');
 assert.match(app, /activeTab === 'market' && <StakeANTS/, 'Marketplace menu renders lANTS trading');
 assert.match(app, /activeTab === 'providers' && <Providers/, 'Hidden /providers still renders');
 assert.match(app, /activeTab === 'rewards' && <Rewards/, 'Hidden /rewards still renders');

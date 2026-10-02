@@ -1,7 +1,7 @@
 import React from 'react';
 import SiteHome, { SiteNext } from './components/SiteHome';
 import StakeANTS from './components/StakeANTS';
-import StakingDesk from './components/StakingDesk';
+import MyAntseed from './components/MyAntseed';
 import Portfolio from './components/Portfolio';
 import Rewards from './components/Rewards';
 import Providers from './components/Providers';
@@ -70,7 +70,7 @@ function App() {
 
         {activeTab === 'home' && <SiteHome setActiveTab={setActiveTab} />}
         {activeTab === 'next' && <SiteNext setActiveTab={setActiveTab} />}
-        {activeTab === 'stake' && <StakingDesk />}
+        {activeTab === 'stake' && <MyAntseed />}
         {activeTab === 'market' && <StakeANTS uiStyle={uiStyle} />}
         {activeTab === 'providers' && <Providers />}
         {activeTab === 'discovery' && <Discovery />}

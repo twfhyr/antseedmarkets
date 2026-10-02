@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback } from 'react';
 import { tabHref } from '../hooks/useTabRouter';
 
 const DEPARTMENT_HREFS = {
@@ -113,13 +113,6 @@ export function SiteNext({ setActiveTab }) {
 }
 
 export default function SiteHome({ setActiveTab }) {
-  useEffect(() => {
-    const tokenMatch = /(?:^#|[#&?])token=([A-Za-z0-9_-]+)/.exec(window.location.hash);
-    if (!tokenMatch) return;
-    sessionStorage.setItem('ants.dashboard.token', tokenMatch[1]);
-    window.history.replaceState(null, '', window.location.pathname + window.location.search);
-  }, []);
-
   const navigate = useCallback((tab) => {
     setActiveTab(tab);
     window.scrollTo({ top: 0, behavior: 'smooth' });
