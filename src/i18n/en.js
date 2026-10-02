@@ -11,7 +11,7 @@ export default {
   "nav.providers": "Providers",
   "nav.rewards": "Rewards",
   "nav.market": "Marketplace",
-  "nav.stake": "Stake",
+  "nav.stake": "My Antseed",
   "discovery.blurb": "Owners pitch why you should try their provider. Buyers and stakers vote. Ten votes highlight that provider at the top of the Providers directory.",
   "discovery.connectVote": "Connect a wallet to vote.",
   "discovery.empty": "No pitches yet. If you run a provider, submit one above.",

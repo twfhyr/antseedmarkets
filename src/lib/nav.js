@@ -1,9 +1,9 @@
 // Primary tabs. Hidden items stay routed (bookmarks still work) so this
 // list can be un-hidden later without rewriting URLs.
 export const PRIMARY_NAV = [
-  { tab: 'stake', hidden: true },
-  { tab: 'market', hidden: false },
+  { tab: 'stake', hidden: false },
   { tab: 'providers', hidden: false },
+  { tab: 'market', hidden: false },
   { tab: 'discovery', hidden: true },
   { tab: 'leaderboard', hidden: true },
   { tab: 'portfolio', hidden: true },

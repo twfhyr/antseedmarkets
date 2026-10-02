@@ -10,14 +10,7 @@ import { useI18n } from '../i18n/index.jsx';
 
 function AntLogo() {
   return (
-    <svg viewBox="0 0 40 46" aria-hidden="true">
-      <g fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M17 14L10 5M23 14l7-9M15 23L4 17M25 23l11-6M15 28H3M25 28h12M16 32L7 43M24 32l9 11" />
-        <ellipse cx="20" cy="17" rx="5" ry="6" fill="currentColor" />
-        <ellipse cx="20" cy="27" rx="4" ry="5" fill="currentColor" />
-        <ellipse cx="20" cy="37" rx="6" ry="7" fill="currentColor" />
-      </g>
-    </svg>
+    <span className="app-header__brand-mark" aria-hidden="true">✳</span>
   );
 }
 
@@ -167,6 +160,13 @@ function WalletMenuInner({
 function Header({ activeTab = 'stake', setActiveTab = () => {}, uiStyle = 'v2', theme = 'editorial', setTheme = () => {} }) {
   const { t } = useI18n();
   const primaryNav = visiblePrimaryNav();
+  const openDepartments = (e) => {
+    e.preventDefault();
+    setActiveTab('home');
+    window.requestAnimationFrame(() => {
+      document.getElementById('departments')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
   return (
     <header className="app-header">
       <div className="app-header__brand">
@@ -187,7 +187,7 @@ function Header({ activeTab = 'stake', setActiveTab = () => {}, uiStyle = 'v2', 
             href={tabHref('home')}
             onClick={(e) => { e.preventDefault(); setActiveTab('home'); }}
           >
-            {uiStyle === 'v2' ? <>antseed<span>markets</span></> : 'antseedmarkets'}
+            {uiStyle === 'v2' ? 'antseed markets' : 'antseedmarkets'}
           </a>
           <div className="app-header__tagline">
             The marketplace built by ants for ants
@@ -202,6 +202,13 @@ function Header({ activeTab = 'stake', setActiveTab = () => {}, uiStyle = 'v2', 
           </HeaderNavLink>
         ))}
       </nav>
+
+      {uiStyle === 'v2' && <p className="app-header__status"><i /> a living network</p>}
+      {uiStyle === 'v2' && (
+        <a className="app-header__departments-link" href={`${tabHref('home')}#departments`} onClick={openDepartments}>
+          Explore departments <span>↘</span>
+        </a>
+      )}
 
       <div className="app-header__actions">
         <div className="design-theme-switch" role="group" aria-label="Theme">
@@ -220,6 +227,18 @@ function Header({ activeTab = 'stake', setActiveTab = () => {}, uiStyle = 'v2', 
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
+          </svg>
+        </a>
+        <a
+          href="https://x.com/AntseedMarkets"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="deposit-btn"
+          title="Antseed Markets on X"
+          aria-label="Antseed Markets on X"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24h-6.657l-5.214-6.817-5.965 6.817H1.68l7.73-8.835L1.254 2.25h6.826l4.713 6.231 5.45-6.231Zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77Z" />
           </svg>
         </a>
         <a

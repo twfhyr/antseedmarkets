@@ -21,9 +21,15 @@ assert.match(app, /activeTab === 'home' && <SiteHome/, 'App renders approved hom
 assert.match(app, /activeTab === 'next' && <SiteNext/, 'App renders approved Next page');
 assert.match(app, /activeTab === 'stake' && <MyAntseed/, 'My Antseed dashboard stays mounted under the account route');
 assert.match(header, /visiblePrimaryNav\(\)/, 'Header keeps the shared approved primary nav');
-assert.match(nav, /tab: 'providers', hidden: false/, 'Header keeps approved Providers nav');
+assert.match(nav, /tab: 'stake', hidden: false/, 'Header exposes My Antseed like the AntBeacon market layout');
 assert.match(nav, /tab: 'market', hidden: false/, 'Header keeps approved Marketplace nav');
-assert.doesNotMatch(header, /HeaderNavLink tab="stake"/, 'Staking is not promoted in primary nav');
+assert.match(nav, /tab: 'providers', hidden: false/, 'Header keeps approved Providers nav');
+assert.match(nav, /tab: 'stake', hidden: false \},\n  \{ tab: 'providers', hidden: false \},\n  \{ tab: 'market', hidden: false \}/, 'Header nav order matches the AntBeacon market layout');
+assert.match(header, /app-header__brand-mark/, 'Header uses the AntBeacon reference star mark');
+assert.match(header, /antseed markets/, 'Header wordmark matches the AntBeacon reference spacing');
+assert.match(header, /app-header__status/, 'Header keeps the AntBeacon living-network status');
+assert.match(header, /Explore departments/, 'Header keeps the AntBeacon departments affordance');
+assert.match(header, /https:\/\/x\.com\/AntseedMarkets/, 'Header links to the Antseed Markets X account');
 assert.match(siteHome, /Small hands\.<br\s*\/?>\s*<em>Far-reaching roots\.<\/em>/, 'Homepage carries approved hero headline');
 assert.match(siteHome, /My Antseed/, 'Homepage includes My Antseed department');
 assert.match(siteHome, /Marketplace/, 'Homepage includes Marketplace department');

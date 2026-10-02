@@ -29,9 +29,10 @@ assert.match(header, /aria-pressed=\{theme === 'terminal'\}/, 'Terminal selectio
 assert.match(header, /<ConnectButton/, 'Keep RainbowKit wallet connection, not a mock button');
 const nav = read('src/lib/nav.js');
 assert.match(header, /visiblePrimaryNav\(\)/, 'Header renders the visible primary tab list');
-assert.match(nav, /tab: 'stake', hidden: true/, 'Stake moves under the homepage account entry');
-assert.match(nav, /tab: 'market', hidden: false/, 'Marketplace sits next to Stake');
+assert.match(nav, /tab: 'stake', hidden: false/, 'My Antseed is visible in the AntBeacon market layout');
 assert.match(nav, /tab: 'providers', hidden: false/, 'Providers stays promoted for the approved homepage navigation');
+assert.match(nav, /tab: 'market', hidden: false/, 'Marketplace stays promoted for the approved homepage navigation');
+assert.match(nav, /tab: 'stake', hidden: false \},\n  \{ tab: 'providers', hidden: false \},\n  \{ tab: 'market', hidden: false \}/, 'Primary nav order mirrors markets.antbeacon.com');
 for (const tab of ['discovery', 'leaderboard', 'portfolio', 'rewards']) {
   assert.match(nav, new RegExp(`tab: '${tab}', hidden: true`), `${tab} is temporarily hidden from primary nav`);
 }

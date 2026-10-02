@@ -19,9 +19,10 @@ const css = read('src/index.css');
 const backendPath = path.resolve(root, '../antseed-zh/backend/server.js');
 const backend = fs.existsSync(backendPath) ? fs.readFileSync(backendPath, 'utf8') : '';
 
-assert.match(nav, /tab: 'stake', hidden: true/);
-assert.match(nav, /tab: 'market', hidden: false/);
+assert.match(nav, /tab: 'stake', hidden: false/);
 assert.match(nav, /tab: 'providers', hidden: false/);
+assert.match(nav, /tab: 'market', hidden: false/);
+assert.match(nav, /tab: 'stake', hidden: false \},\n  \{ tab: 'providers', hidden: false \},\n  \{ tab: 'market', hidden: false \}/);
 for (const tab of ['discovery', 'leaderboard', 'portfolio', 'rewards']) {
   assert.match(nav, new RegExp(`tab: '${tab}', hidden: true`), `${tab} stays routed but hidden`);
 }
@@ -57,7 +58,7 @@ assert.match(css, /\.staking-form\s*\{/);
 assert.match(css, /position: static/);
 assert.doesNotMatch(css, /\.staking-form[\s\S]*position: sticky/);
 
-assert.equal(en['nav.stake'], 'Stake');
+assert.equal(en['nav.stake'], 'My Antseed');
 assert.equal(en['nav.market'], 'Marketplace');
 assert.equal(en['stake.deskTitle'], 'Stake ANTS');
 assert.equal(en['stake.deskPool'], 'Pool');
